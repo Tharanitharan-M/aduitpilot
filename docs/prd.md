@@ -121,7 +121,7 @@ Non-goals are first-class requirements. They prevent scope creep and protect aga
 | NG-5 | **Not a multi-framework GRC platform in v1.** Version 1 covers SOC 2 Trust Services Criteria (64 controls, CC1–CC9) only. ISO 27001, HIPAA, PCI-DSS, and GDPR mappings are deferred to v2. | Breadth before depth is the wrong tradeoff for a reference architecture. One framework done well is more valuable to engineers than six frameworks done poorly. |
 | NG-6 | **Not an evidence archive for actual external readiness reviews.** AuditPilot collects evidence to generate readiness recommendations. It is not a certified evidence vault that a licensed CPA can rely on directly. | This would require SOC 2 Type II on AuditPilot itself, legal agreements with CPA firms, and an entirely different product scope. |
 | NG-7 | **Not a compliance training platform.** AuditPilot does not teach engineers what SOC 2 controls mean or how to implement them from scratch. It assumes the user has basic security hygiene already in place and wants to measure and document it. | Training is a solved problem (SANS, Secureframe Academy, Vanta Learning). Adding training would bloat scope with no architectural value. |
-| NG-8 | **No Oracle OKE Helm chart in v1.** Kubernetes deployment is deferred to v2. Cloud Run + Vercel is sufficient for the demo and for fork-and-run use cases. | Time-boxed at 6 weeks. The OKE Helm chart is a resume embellishment that costs two days of Sprint time and adds no user-facing value in v1. |
+| NG-8 | **No Oracle OKE Helm chart in v1.** Kubernetes-on-Helm deployment is deferred to v2. **Docker Compose self-host IS supported in v1** (covered by US-022 and `docs/runbooks/self-host.md`); a security-conscious team can run the full stack on a single VM with one `docker compose -f docker-compose.prod.yml up` command. The difference is one bash file, not infrastructure scope. Cloud Run + Vercel remains the recommended deployment for the public demo. | The OKE Helm chart is a substantial operational lift (CRDs, ingress controller, cert-manager, HPA) that costs two days of Sprint time and adds no v1 user-facing value. Docker Compose covers the same forkability and self-host story without the operational tax. |
 
 ---
 
@@ -164,7 +164,7 @@ Features are grouped by Must (ship with v1), Should (ship if time allows in v1),
 | ISO 27001 / HIPAA / PCI-DSS mappings | NG-5. Deferred to v2. |
 | Autonomous policy publication | NG-3, NG-4. Policies are downloaded; user publishes. |
 | Penetration testing or vulnerability scanning | Different product category. Out of scope. |
-| Oracle OKE Helm chart | NG-8. Deferred to v2. |
+| Oracle OKE Helm chart | NG-8. Deferred to v2. Docker Compose self-host is in v1 scope (US-022) and covers the same forkability story. |
 | Generative Trust Center page | Nice-to-have for later. No user story. |
 | Commercial SaaS pricing, SLAs, or support contracts | NG-1. This is an open-source reference architecture. |
 

@@ -29,7 +29,15 @@ Three agents, not eight.
 | **AdversarialAuditor** | Read-only critic in a separate process. Finds gaps a real reviewer would catch, returns findings via A2A v1.0. |
 | **HumanReviewGate** | LangGraph `interrupt()` surface. You review and approve before anything is finalized. |
 
-Five MCP servers handle tool integration: `github-mcp`, `gmail-mcp`, `slack-mcp`, `calendar-mcp`, and `compliance-kb-mcp`. All published to npm and PyPI under Apache 2.0.
+Five custom MCP servers, all authored by us and published to npm and PyPI under Apache 2.0:
+
+- `compliance-kb-mcp` — SOC 2 Trust Services Criteria knowledge base with hybrid pgvector + BM25 search
+- `evidence-store-mcp` — typed read-only access to collected evidence
+- `questionnaire-mcp` — SIG-Lite XLSX parser, question clustering, answer scaffolding
+- `policy-template-mcp` — Markdown policy templates with control-citation slots
+- `drift-watcher-mcp` — evidence snapshot diffing and drift event production
+
+Plus four community MCP servers (forked, security-reviewed) for read-only OAuth integrations: GitHub (v1), Gmail (v1.5), Slack (v1.5), Calendar (v1.5).
 
 ### Stack
 
@@ -62,15 +70,19 @@ Five MCP servers handle tool integration: `github-mcp`, `gmail-mcp`, `slack-mcp`
 - [`context/AUDITPILOT_TOOLING_LANDSCAPE.md`](context/AUDITPILOT_TOOLING_LANDSCAPE.md) — tool-by-tool reference with alternatives evaluated
 - [`docs/prd.md`](docs/prd.md) — product requirements
 - [`docs/srs.md`](docs/srs.md) — software requirements
-- [`docs/adrs/`](docs/adrs/) — nine architecture decision records covering runtime, agent count, HITL, observability, and more
+- [`docs/adrs/`](docs/adrs/) — twelve architecture decision records covering runtime, agent count, HITL, observability, background jobs, prompt management, and the public demo
+- [`docs/system-design.md`](docs/system-design.md) — full system design across fifteen sections: architecture, components, sequence flows, ERD, API surface, threat model (OWASP LLM Top 10), background jobs, LLM integration patterns, drift watcher, demo account, re-run/compare/revert flows
+- [`docs/user-stories.md`](docs/user-stories.md) — thirty-three user stories in INVEST format covering all three personas (founding engineer, security lead, AI engineer) plus the casual-reviewer demo flow
 
 ---
 
 ## Status
 
-Currently in Sprint 0 (week of May 1, 2026): documentation, ADRs, and repo scaffold.
+Currently in Sprint 0 (week of May 1, 2026): documentation, ADRs, and repo scaffold. Sprint 0 is complete — twelve ADRs, full system design, thirty-three user stories.
 
-Full build runs May through mid-June 2026 across 11 sprints. See [`PLAN.md`](PLAN.md) for the complete sprint breakdown.
+Full build runs May through July 2026 across eleven sprints. Public demo URL target: July 1, 2026. See [`PLAN.md`](PLAN.md) for the complete sprint breakdown.
+
+For an honest critical analysis of the design (what is weak, what was deferred, what would change in v2), maintainers can read `decisions/SYSTEM_DESIGN_RATIONALE.md` (gitignored).
 
 ---
 
@@ -96,10 +108,13 @@ docker compose up
 
 Major decisions are documented as ADRs in [`docs/adrs/`](docs/adrs/). Quick summary:
 
-- **LangGraph over Google ADK** — LangGraph appears in ~25–30% of 2026 AI engineering job listings and ships with a no-breaking-changes commitment through 2.0. ADK has under 1% industry adoption and had 31 minor releases with breaking changes in 12 months.
-- **Three agents over eight** — Backed by Anthropic's "Building Effective Agents," Cognition AI's single-writer principle, and OpenAI's orchestration guide. Fewer agents means less token waste, faster traces, and smaller error blast radius.
-- **Read-only by design** — Read-only OAuth scopes only. This is both a legal decision (AICPA UPAct) and a product one. Vanta, the leading commercial product in this space, works the same way.
-- **Supabase Auth over Clerk** — 50k MAU free (vs. Clerk's 10k), MFA included free (vs. Clerk's $100/mo add-on), and MFA is a SOC 2 control we need to demonstrate.
+- **LangGraph over Google ADK** — LangGraph appears in ~25–30% of 2026 AI engineering job listings and ships with a no-breaking-changes commitment through 2.0. ADK has under 1% industry adoption and had 31 minor releases with breaking changes in 12 months. (ADR-0001)
+- **Three agents over eight** — Backed by Anthropic's "Building Effective Agents," Cognition AI's single-writer principle, and OpenAI's orchestration guide. Fewer agents means less token waste, faster traces, and smaller error blast radius. (ADR-0002)
+- **Read-only by design** — Read-only OAuth scopes only. This is both a legal decision (AICPA UPAct) and a product one. Vanta, the leading commercial product in this space, works the same way. (ADR-0004)
+- **Supabase Auth over Clerk** — 50k MAU free (vs. Clerk's 10k), MFA included free (vs. Clerk's $100/mo add-on), and MFA is a SOC 2 control we need to demonstrate. (ADR-0008)
+- **Redis Streams for background jobs** — Real queue semantics (consumer groups, ACK, dead-letter) on infrastructure we already pay zero for. Kafka would have been over-engineering at this scale. (ADR-0010)
+- **Langfuse-backed prompt management with local fallback** — YAML in repo as source of truth, pushed to Langfuse on deploy, runtime fetch with 60-second cache and local fallback on outage. (ADR-0011)
+- **Public demo account with shared state** — One demo account with seeded synthetic data, a Reset button, and a daily auto-reset cron. Casual visitors see a working dashboard in 90 seconds without sign-up. (ADR-0012)
 
 ---
 
