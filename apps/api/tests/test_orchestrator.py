@@ -263,3 +263,86 @@ async def test_lookup_control_short_circuits_on_invalid_id_without_calling_mcp()
         pytest.fail(
             f"unexpected tool return type {type(payload)!r}: {payload!r}"
         )
+
+
+# ─── Chunk 3.5.5 — empty-scope refusal (ADR-0015) ───────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_refuses_run_readiness_scan_with_empty_scope():
+    """Sprint 3.5 chunk 3.5.5 — when intent='run_readiness_scan' AND
+    repo_include_list is empty, the orchestrator must short-circuit with
+    a friendly refusal message and NEVER invoke the LLM."""
+
+    model_called = {"n": 0}
+
+    async def fn(messages: list[ModelMessage], info: AgentInfo) -> ModelResponse:
+        # If this fires, the empty-scope guard failed.
+        model_called["n"] += 1
+        return ModelResponse(parts=[TextPart(content="should not be called")])
+
+    graph = build_graph(memory_checkpointer(), model=FunctionModel(fn))
+    result = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content="run my readiness scan")],
+            "intent": "run_readiness_scan",
+            "repo_include_list": [],
+        },
+        config={"configurable": {"thread_id": "test-empty-scope"}},
+    )
+
+    assert model_called["n"] == 0, "LLM was invoked despite empty scope"
+    assert result["current_step"] == "empty_scope_refusal"
+    assert "empty_repo_scope" in result["rejection_reasons"]
+
+    # The refusal message is the LAST AIMessage; the user input is the first.
+    last = result["messages"][-1]
+    assert "Pick at least one repo" in str(last.content)
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_proceeds_when_intent_required_scope_is_present():
+    """Same intent but with a non-empty repo_include_list — the guard
+    must NOT fire and the LLM is invoked normally."""
+
+    model = FunctionModel(
+        _make_lookup_control_then_summarise(
+            "AC-1",
+            "AC-1 is the NIST 800-53 Policy and Procedures control.",
+        )
+    )
+    graph = build_graph(memory_checkpointer(), model=model)
+    result = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content="What is AC-1?")],
+            "intent": "run_readiness_scan",
+            "repo_include_list": ["111", "222"],
+        },
+        config={"configurable": {"thread_id": "test-with-scope"}},
+    )
+
+    # The LLM was called and the orchestrator turn completed normally.
+    assert result["current_step"] == "orchestrator_stub_complete"
+    assert "empty_repo_scope" not in result.get("rejection_reasons", [])
+
+
+@pytest.mark.asyncio
+async def test_orchestrator_does_not_require_scope_for_free_chat():
+    """Default intent is None / 'free_chat' — no scope required."""
+
+    model = FunctionModel(
+        _make_lookup_control_then_summarise(
+            "AC-1",
+            "AC-1 is the NIST 800-53 Policy and Procedures control.",
+        )
+    )
+    graph = build_graph(memory_checkpointer(), model=model)
+    result = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content="What is AC-1?")],
+            # No intent set; repo_include_list intentionally empty.
+        },
+        config={"configurable": {"thread_id": "test-free-chat"}},
+    )
+
+    assert result["current_step"] == "orchestrator_stub_complete"

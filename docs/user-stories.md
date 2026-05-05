@@ -12,7 +12,7 @@
 | ID     | Title                                                        | Persona         | JTBD   | Sprint        | PRD feature                                |
 | ------ | ------------------------------------------------------------ | --------------- | ------ | ------------- | ------------------------------------------ |
 | US-001 | Sign up and sign in                                          | Maya            | JTBD-1 | Sprint 3      | Clerk                                      |
-| US-002 | Connect GitHub read-only                                     | Maya            | JTBD-1 | Sprint 3      | GitHub read-only connector                 |
+| US-002 | Connect GitHub read-only and choose scoped repos             | Maya            | JTBD-1 | Sprint 3 / 3.5| GitHub read-only connector + repo-picker   |
 | US-003 | Run first readiness scan                                     | Maya            | JTBD-1 | Sprint 4      | Automated control evidence collection      |
 | US-004 | Disconnect a connector                                       | Maya            | JTBD-1 | Sprint 3      | GitHub read-only connector                 |
 | US-005 | See connection status on dashboard                           | Maya            | JTBD-1 | Sprint 3      | Dashboard surface                          |
@@ -100,24 +100,35 @@ This is the entry door. JTBD-1 (PRD 3) requires that Maya can go from landing pa
 
 ---
 
-## US-002: Connect GitHub read-only
+## US-002: Connect GitHub read-only and choose scoped repos
 
 **As** Maya
-**I want** to connect AuditPilot to my GitHub organization with read-only access
-**So that** the orchestrator can collect SOC 2 evidence (branch protection, MFA, code scanning) without me granting any write permission
+**I want** to connect AuditPilot to my GitHub organization with read-only access **and pick the specific repos I want scanned**
+**So that** the orchestrator collects SOC 2 evidence (branch protection, MFA, code scanning) only from the in-scope services, without me granting any write permission and without paying LLM cost on out-of-scope repos
 
 ### Acceptance criteria (Gherkin)
 
 ```gherkin
 GIVEN I am signed in and have no GitHub connector
 WHEN I click "Connect GitHub" on the onboarding page
-THEN the GitHub OAuth dialog shows the literal scopes "repo:read" and "read:org"
+THEN the GitHub OAuth dialog shows the literal scopes "public_repo" and "read:org"
 AND no scope contains "write", "admin", or "delete"
 
 GIVEN I have authorized the GitHub OAuth dialog
-WHEN I am redirected back to /dashboard
-THEN the connector card shows status "Connected"
-AND a list of my GitHub repositories appears within 5 seconds
+WHEN I am redirected back to AuditPilot
+THEN the dashboard routes me to /dashboard/connectors/{id}/scope (the repo picker)
+AND every repo in my connected org is listed with a checkbox, search, and a "Select all in org <X>" shortcut
+AND no repo is selected by default (default-deny per ADR-0015)
+
+GIVEN I select two repos and click "Save scope"
+WHEN I return to the dashboard
+THEN the connector card shows status "Connected · 2 repos"
+AND PATCH /api/connectors/{id}/scoped-repos persisted those two repos in connector_scoped_repos
+
+GIVEN I have a connector with empty scope
+WHEN I click "Run readiness scan"
+THEN the orchestrator refuses to start
+AND the UI shows "Pick at least one repo to scan" with a link back to the picker
 
 GIVEN GitHub returns an OAuth error (e.g. user denies access)
 WHEN I am redirected back to /dashboard
@@ -133,31 +144,44 @@ GIVEN my GitHub account belongs to two organizations
 WHEN I authorize the OAuth dialog
 THEN the connector flow asks me which organization to connect
 AND the chosen organization is recorded in `connectors.scopes_metadata.org_login`
+AND the picker only lists repos from the chosen org
+
+GIVEN I want to add or remove a repo from scope later
+WHEN I click "Edit scope" on the connector card
+THEN I land back on the picker with my current selection pre-checked
+AND saving a new selection updates `connector_scoped_repos` in place (idempotent)
 ```
 
 ### Why this matters
 
-Read-only-by-design is the architectural identity of the project (ADR-0004). Showing the literal scope strings in the consent surface, before the GitHub dialog opens, is the trust signal that lets a security-conscious Maya verify our claim without reading our source code. Every other compliance tool either hides the scopes or buries them in a doc; we put them in the user's face. JTBD-1.
+Read-only-by-design is the architectural identity of the project (ADR-0004). Showing the literal scope strings in the consent surface — and letting Maya choose **which** repos are read, not just **how** they are read — is the trust signal that lets a security-conscious user verify our claim without reading our source code. Every other compliance tool either hides the scopes or buries them in a doc; we put scope and read-list in the user's face. ADR-0015 records why selection happens at scan time, not as a Sprint 9 retrofit. JTBD-1.
 
 ### Implementation notes (high level only)
 
 - Clerk handles the OAuth flow; the access token is stored server-side and never reaches the browser.
-- Frontend: `apps/web/app/(dashboard)/connectors/page.tsx`. Reads connector status via `GET /api/me`.
-- Backend: `POST /api/connectors/github`. ADR-0004, ADR-0008. SRS FR-003, FR-007, FR-014.
-- Data dependency: `connectors` table.
+- Frontend connect: `user.createExternalAccount({ strategy: "oauth_github", redirectUrl: "/dashboard", additionalScopes: ["public_repo", "read:org"] })` in `apps/web/components/connector-card.tsx`.
+- Frontend picker: `apps/web/app/dashboard/connectors/[id]/scope/page.tsx` — shadcn `DataTable` ≤ 100 repos, `Command` palette as fallback.
+- Backend: `GET /api/me` (returns connector + scoped repo count), `DELETE /api/connectors/{id}` (revoke), `PATCH /api/connectors/{id}/scoped-repos` (set scope). ADR-0004, ADR-0008, ADR-0015. SRS FR-003, FR-007, FR-014.
+- Data dependencies: `connectors` table; new `connector_scoped_repos` join table (Drizzle migration `0003_connector_scoped_repos.sql`).
 
 ### PLAN.md chunks generated by this story
 
-- [ ] Chunk 3.6 — GitHub OAuth (read-only) connector via Clerk
-- [ ] Chunk 3.7 — Display connected GitHub repos on dashboard
+- [x] Chunk 3.6 — GitHub OAuth (read-only) connector via Clerk
+- [x] Chunk 3.7 — Display connected GitHub repos on dashboard
+- [ ] Chunk 3.5.1 — Drizzle migration for `connector_scoped_repos`
+- [ ] Chunk 3.5.2 — Repo-picker UI
+- [ ] Chunk 3.5.3 — `PATCH /api/connectors/{id}/scoped-repos`
+- [ ] Chunk 3.5.4 — Wire the picker into the connect-flow happy path
+- [ ] Chunk 3.5.5 — Seed `repo_include_list` into orchestrator state, refuse empty scope
 
 ### Definition of done
 
-- [ ] All three acceptance criteria pass
-- [ ] Auto test: Pytest test verifying `POST /api/connectors/github` accepts only the read-only scope set; rejects any token with write scopes
-- [ ] Manual test: real OAuth round-trip from a clean browser
+- [ ] All eight acceptance criteria pass
+- [ ] Auto test: Pytest verifies (a) only `public_repo` + `read:org` scopes accepted, (b) RLS denies cross-tenant reads on `connector_scoped_repos`, (c) empty-scope refusal returns the expected validation error
+- [ ] Auto test: Vitest renders all three picker states (empty, mid-selection, all-selected) and the connector card "Connected · N repos" state
+- [ ] Manual test: real OAuth round-trip from a clean browser, then full picker → save → run-scan with chosen scope only
 - [ ] PostHog event capture scrubs any `gho_*` token strings (verified by PostHog test event)
-- [ ] OpenTelemetry span on `POST /api/connectors/github`
+- [ ] OpenTelemetry spans on `connectors.get_me`, `connectors.delete_connector`, `connectors.patch_scoped_repos`
 - [ ] Step Report produced; user committed
 
 ---
@@ -1533,20 +1557,26 @@ JTBD-3. CC9 is the fourth Must-tier policy. Even without the Gmail connector in 
 
 ---
 
-## US-030: Re-run a scan with different params
+## US-030: Re-run a scan, optionally with edited scope
 
 **As** Maya
-**I want** to re-run a previous scan with adjusted parameters (e.g. include/exclude specific repositories)
-**So that** I can see how scope changes affect my control posture without losing the original scan
+**I want** to re-run a previous scan, reusing my current connector scope by default and editing scope first when I want to compare different sets of repos
+**So that** I can see how scope or evidence-freshness changes affect my control posture without losing the original scan
 
 ### Acceptance criteria (Gherkin)
 
 ```gherkin
 GIVEN I have a previous scan_run R1
-WHEN I click "Re-run" on R1's detail page and adjust the repo include-list
-THEN POST /api/scan-runs is called with `{ source: "rerun", parent_scan_run_id: R1, params_override: {...} }`
-AND a new scan_run R2 is created with `parent_scan_run_id` pointing back to R1
+WHEN I click "Re-run" on R1's detail page (no edit-scope step)
+THEN POST /api/scan-runs is called with `{ source: "rerun", parent_scan_run_id: R1 }`
+AND R2 reuses the connector's current `connector_scoped_repos` (canonical source per ADR-0015)
+AND a snapshot of the scope used by R2 is recorded with the scan_run for traceability
 AND R1 is unchanged
+
+GIVEN I want to compare different scope between R1 and R2
+WHEN I click "Edit scope" on the connector card, change the selection, save, and then re-run R1
+THEN R2 uses the new persisted scope
+AND the diff view (US-031) shows which controls changed because scope changed (vs. because evidence changed)
 
 GIVEN R2 finishes running
 WHEN I view the dashboard
@@ -1561,24 +1591,25 @@ THEN I land on the diff view (US-031)
 
 ### Why this matters
 
-Real users iterate. They run a scan, notice an unexpected gap, adjust scope, re-run. Without a re-run flow, they have to start from scratch every time.
+Real users iterate. They run a scan, notice an unexpected gap, sometimes broaden or narrow scope, re-run. ADR-0015 made the connector-level scope the canonical source, so re-run reuses it by default and "different repos this time" becomes a two-step flow (edit scope, then re-run) with one source of truth instead of two competing places to look up "what was scanned."
 
 ### Implementation notes (high level only)
 
 - New column `parent_scan_run_id` on `scan_runs` table.
-- `POST /api/scan-runs` accepts the rerun payload.
+- New column `scoped_repos_snapshot` (JSONB) on `scan_runs` to freeze the scope used by that run, since the connector scope can change later.
+- `POST /api/scan-runs` accepts `{ source: "rerun", parent_scan_run_id, params_override?: {...} }`. `params_override` is reserved for non-scope settings (evidence-freshness window, model override, etc.).
 - System-design 15.1.
 
 ### PLAN.md chunks generated by this story
 
-- [ ] Chunk 9.X — Add `parent_scan_run_id` column via Drizzle migration
-- [ ] Chunk 9.Y — `Re-run` button on scan_run detail page
+- [ ] Chunk 9.10 — Add `parent_scan_run_id` + `scoped_repos_snapshot` columns via Drizzle migration
+- [ ] Chunk 9.11 — `Re-run` button reuses persisted scope (no params-override modal for the include-list)
 
 ### Definition of done
 
-- [ ] All three acceptance criteria pass
-- [ ] Auto test: Pytest verifies the parent link is set correctly
-- [ ] Manual test: re-run a real scan with a different repo include-list
+- [ ] All four acceptance criteria pass
+- [ ] Auto test: Pytest verifies the parent link is set correctly and `scoped_repos_snapshot` matches the connector's scope at run time
+- [ ] Manual test: re-run a real scan; separately, edit-scope-then-re-run and verify the diff view explains the delta
 - [ ] Step Report produced; user committed
 
 ---

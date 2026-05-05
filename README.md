@@ -69,7 +69,7 @@ Plus four community MCP servers (forked, security-reviewed) for read-only OAuth 
 - [`context/AUDITPILOT_TOOLING_LANDSCAPE.md`](context/AUDITPILOT_TOOLING_LANDSCAPE.md) — tool-by-tool reference with alternatives evaluated
 - [`docs/prd.md`](docs/prd.md) — product requirements
 - [`docs/srs.md`](docs/srs.md) — software requirements
-- [`docs/adrs/`](docs/adrs/) — twelve architecture decision records covering runtime, agent count, HITL, observability, background jobs, prompt management, and the public demo
+- [`docs/adrs/`](docs/adrs/) — fifteen architecture decision records covering runtime, agent count, HITL, observability, background jobs, prompt management, the public demo, the NIST 800-53 control catalog, the consolidated PostHog stack, and the connector-scoped repo picker
 - [`docs/system-design.md`](docs/system-design.md) — full system design across fifteen sections: architecture, components, sequence flows, ERD, API surface, threat model (OWASP LLM Top 10), background jobs, LLM integration patterns, drift watcher, demo account, re-run/compare/revert flows
 - [`docs/user-stories.md`](docs/user-stories.md) — thirty-three user stories in INVEST format covering all three personas (founding engineer, security lead, AI engineer) plus the casual-reviewer demo flow
 
@@ -77,27 +77,61 @@ Plus four community MCP servers (forked, security-reviewed) for read-only OAuth 
 
 ## Status
 
-Currently in Sprint 0 (week of May 1, 2026): documentation, ADRs, and repo scaffold. Sprint 0 is complete — twelve ADRs, full system design, thirty-three user stories.
+Sprint 3.5 closed (2026-05-05). Sprints 0–3 + 3.5 are done; Sprint 4 (orchestrator wired to UI + control posture grid + Pending Actions) is next.
 
-Full build runs May through July 2026 across eleven sprints. Public demo URL target: July 1, 2026.
+What works end-to-end today:
+
+- Sign up / sign in / sign out (Clerk).
+- Connect GitHub via read-only OAuth (`public_repo`, `read:org`); disconnect at will.
+- Repo-picker step between connect and first scan: choose which repos AuditPilot is allowed to read. Default-deny — nothing is selected unless the user picks it. Selection is persisted on the connector and editable from the dashboard.
+- Orchestrator refuses to start a `run_readiness_scan` against an empty repo scope before any LLM call (ADR-0015).
+
+Test counts at end of Sprint 3.5: 115/115 pytest + 25/25 vitest green; `tsc --noEmit` clean.
+
+Full build runs May through July 2026 across eleven sprints (plus the inserted Sprint 3.5 per ADR-0015). Public demo URL target: July 1, 2026.
 
 ---
 
 ## Local development
 
-> Coming in Sprint 1. Docker Compose one-command setup.
+There are two supported workflows. Both bring up the FastAPI backend on `:8000` and the Next.js frontend on `:3000` together.
+
+### Native (fast iteration, no Docker)
 
 ```bash
-# Clone the repo
+# 1) clone + bootstrap deps
 git clone https://github.com/tharani/auditpilot.git
 cd auditpilot
+make install
 
-# Copy environment variables
-cp .env.example .env.local
+# 2) configure secrets (Clerk + PostHog + LLM keys)
+cp apps/api/.env.example apps/api/.env       # then fill in
+cp apps/web/.env.example apps/web/.env.local # then fill in
 
-# Start everything
-docker compose up
+# 3) start FastAPI + Next.js together (Ctrl-C stops both)
+make dev
+
+# verify both services
+make health
+# FastAPI:  {"status":"ok",...}
+# Next.js:  up
+
+# stop everything
+make stop
+
+# run the full verify gauntlet (typecheck + vitest + pytest)
+make verify
 ```
+
+### Docker (full stack including Postgres + Redis)
+
+```bash
+make docker-up    # build + start postgres + redis + api + web
+make docker-logs  # tail
+make docker-down  # tear down
+```
+
+See [`Makefile`](Makefile) for the complete target list (`make help`).
 
 ---
 
@@ -108,6 +142,7 @@ Major decisions are documented as ADRs in [`docs/adrs/`](docs/adrs/). Quick summ
 - **LangGraph over Google ADK** — LangGraph appears in ~25–30% of 2026 AI engineering job listings and ships with a no-breaking-changes commitment through 2.0. ADK has under 1% industry adoption and had 31 minor releases with breaking changes in 12 months. (ADR-0001)
 - **Three agents over eight** — Backed by Anthropic's "Building Effective Agents," Cognition AI's single-writer principle, and OpenAI's orchestration guide. Fewer agents means less token waste, faster traces, and smaller error blast radius. (ADR-0002)
 - **Read-only by design** — Read-only OAuth scopes only. This is both a legal decision (AICPA UPAct) and a product one. Vanta, the leading commercial product in this space, works the same way. (ADR-0004)
+- **Repo selection at scan time** — After connect, the user picks which repos to scan from a default-deny picker. The selection is persisted on the connector, drives every scan and re-run, and the orchestrator refuses to start with an empty scope. The user controls **which** reads happen, not just **how**. (ADR-0015)
 - **Clerk over standalone Supabase Auth** — we already use Neon for database and Cloudflare R2 for storage, so Clerk avoids carrying Supabase for a single feature while giving pre-built Next.js auth components (`<SignIn />`, `<UserButton />`, `<OrganizationSwitcher />`). The 10k MAU free tier covers portfolio scale. (ADR-0008)
 - **Redis Streams for background jobs** — Real queue semantics (consumer groups, ACK, dead-letter) on infrastructure we already pay zero for. Kafka would have been over-engineering at this scale. (ADR-0010)
 - **Langfuse-backed prompt management with local fallback** — YAML in repo as source of truth, pushed to Langfuse on deploy, runtime fetch with 60-second cache and local fallback on outage. (ADR-0011)

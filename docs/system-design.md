@@ -295,18 +295,25 @@ sequenceDiagram
 
     Web->>Maya: Render onboarding checklist
     Maya->>Web: Click "Connect GitHub"
-    Web->>CL: github.readonly OAuth flow
-    CL-->>Web: token issued (server-side only)
-    Web->>API: POST /api/connectors/github (no token; CL stores it)
-    API->>DB: INSERT INTO connectors
-    API-->>Web: 201 Created
+    Web->>CL: github.readonly OAuth flow (scopes: public_repo, read:org)
+    CL-->>Web: external account created (Clerk stores token server-side)
+    Web->>Web: Redirect to /dashboard/connectors/{id}/scope (picker)
+    Web->>API: GET /api/me (current connector + empty scope)
+    Web->>GH: list_repos(org) — populates picker
+    Maya->>Web: Tick chosen repos, click "Save scope"
+    Web->>API: PATCH /api/connectors/{id}/scoped-repos
+    API->>DB: INSERT/DELETE INTO connector_scoped_repos (idempotent)
+    API-->>Web: 204
+    Web->>Maya: Return to /dashboard ("Connected · 2 repos")
 
     Web->>Maya: "Run first readiness scan?"
     Maya->>Web: Click "Run scan"
     Web->>API: POST /chat with intent="run_readiness_scan"<br/>Accept: text/event-stream
-    API->>Orch: graph.ainvoke({ thread_id, user_id, intent })
-    Orch->>GH: list_repos(org), get_org_mfa(), ...
-    GH-->>Orch: parallel responses
+    API->>DB: SELECT FROM connector_scoped_repos (seed orchestrator state)
+    API->>Orch: graph.ainvoke({ thread_id, user_id, intent, repo_include_list })
+    Orch->>Orch: validate_scope (refuse if empty, ScanRunValidationError)
+    Orch->>GH: get_branch_protection(scoped_repos), get_org_mfa(), ...
+    GH-->>Orch: parallel responses (only over scoped repos)
     Orch-->>API: stream UIMessage parts (text-delta, tool-call, tool-result)
     API-->>Web: SSE chunks (header: x-vercel-ai-ui-message-stream:v1)
     Web-->>Maya: render Tool cards in real time
@@ -316,9 +323,10 @@ sequenceDiagram
 
 Where the design earns trust:
 
-- The OAuth scopes shown to the user are **read-only literal strings**: `repo:read`, `read:org`. The frontend prints them in the consent surface so a security-conscious user can verify before clicking.
+- The OAuth scopes shown to the user are **read-only literal strings**: `public_repo`, `read:org`. The frontend prints them in the consent surface so a security-conscious user can verify before clicking.
 - The OAuth access token never travels to the browser. Clerk stores it server-side; the frontend gets a session JWT only.
 - The first `/chat` call carries the user's session JWT in the Authorization header. FastAPI verifies it with Clerk JWKS-backed token verification on every request — there is no in-process session cache.
+- **Maya picks which repos to scan before any read happens.** The connector-scoped repo list is default-deny (nothing selected initially) and persisted on `connector_scoped_repos`. The orchestrator refuses to start with an empty scope. ADR-0015 records the rationale: cost discipline, signal-to-noise on the Pending Actions queue, and a stronger trust narrative — the user controls **which** reads happen, not just that reads are read-only.
 
 ### 3.2 Readiness scan flow
 

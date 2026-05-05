@@ -203,7 +203,7 @@ The earlier framing of "4 weeks" was aspirational. Honest scope for a solo build
 | ---------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 (May 1–5)      | Sprint 0      | Documentation only — PRD, SRS, 9 ADRs, system design, user stories, repo scaffold                                                                                |
 | 1 (May 6–12)     | Sprints 1, 2  | `compliance-kb-mcp` v0.1 buildable (publish deferred), backend skeleton + FastAPI ↔ LangGraph ↔ AI SDK 6 SSE bridge                                              |
-| 2 (May 13–19)    | Sprints 3, 4  | Clerk auth + GitHub OAuth, AuditOrchestrator wired to UI, **`compliance-kb-mcp` v0.1.0 published to npm + PyPI** after orchestrator integration confirms the API |
+| 2 (May 13–19)    | Sprints 3, 3.5, 4 | Clerk auth + GitHub OAuth, **connector-scoped repo picker (Sprint 3.5 per ADR-0015)**, AuditOrchestrator wired to UI, **`compliance-kb-mcp` v0.1.0 published to npm + PyPI** after orchestrator integration confirms the API |
 | 3 (May 20–26)    | Sprints 5, 6  | Evidence collection + storage, HITL via `interrupt()`, policy drafting + DOCX export                                                                             |
 | 4 (May 27–Jun 2) | Sprints 7, 8  | Questionnaire + SIG-Lite XLSX flow, AdversarialAuditor + A2A v1.0 cross-process                                                                                  |
 | 5 (Jun 3–9)      | Sprints 9, 10 | Drift watcher + observability stack, eval suite + judge validation (TPR/TNR/Cohen's kappa)                                                                       |

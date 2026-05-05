@@ -31,7 +31,18 @@ from apps.api.agents.orchestrator import (
     OrchestratorDeps,
     build_orchestrator_agent,
 )
-from apps.api.state import AuditPilotState, ControlAssessment
+from apps.api.state import (
+    SCOPE_REQUIRED_INTENTS,
+    AuditPilotState,
+    ControlAssessment,
+)
+
+
+_EMPTY_SCOPE_REFUSAL_TEXT = (
+    "Pick at least one repo to scan. Open the connector card on your "
+    "dashboard and click \"Configure scope\" to choose the repos you want "
+    "AuditPilot to read."
+)
 
 tracer = trace.get_tracer(__name__)
 
@@ -59,10 +70,38 @@ def build_graph(
         the delta (the AI response + any control-map updates). LangGraph's
         default last-writer-wins reducer merges the non-`messages` fields;
         the `add_messages` reducer on `messages` appends the returned list.
+
+        Sprint 3.5 chunk 3.5.5 — empty-scope refusal. When the user-
+        supplied intent is in ``SCOPE_REQUIRED_INTENTS`` (currently
+        ``run_readiness_scan``) AND ``repo_include_list`` is empty, the
+        node short-circuits with a friendly refusal message before any
+        LLM call is made. Implements ADR-0015's default-deny on the read
+        surface: no scope, no scan.
         """
 
         if not state.messages:
             return {}
+
+        # Empty-scope guard runs FIRST — before any LLM call — so a
+        # mis-configured scan never burns tokens. The return is INSIDE
+        # the span context (python-reviewer F3) so the trace records the
+        # full path including dict construction.
+        if (
+            state.intent in SCOPE_REQUIRED_INTENTS
+            and not state.repo_include_list
+        ):
+            with tracer.start_as_current_span("graph.empty_scope_refusal") as span:
+                span.set_attribute("scope.required", True)
+                span.set_attribute("scope.repo_include_count", 0)
+                span.set_attribute("scope.intent", state.intent or "")
+                return {
+                    "messages": [AIMessage(content=_EMPTY_SCOPE_REFUSAL_TEXT)],
+                    "current_step": "empty_scope_refusal",
+                    "rejection_reasons": [
+                        *state.rejection_reasons,
+                        "empty_repo_scope",
+                    ],
+                }
 
         with tracer.start_as_current_span("graph.orchestrator_node") as span:
             user_input = cast(str, state.messages[-1].content)

@@ -295,6 +295,24 @@ After signing in, Maya sees a checklist of integrations. Each one shows a "Conne
 
 Each integration uses OAuth with read-only scopes. The OAuth dialog explicitly shows the scopes Maya is granting. She can disconnect at any time.
 
+After GitHub connects, AuditPilot routes Maya to a **repo picker** before the first scan. She picks the repos that are in scope for SOC 2 readiness (typically a subset — production services, not internal tooling or research notebooks). The picker is default-deny: nothing is selected until she chooses. The chosen list is persisted on the connector and drives every scan and re-run. ADR-0015 records why selection happens up-front rather than as a Sprint 9 retrofit (cost, signal-to-noise on the Pending Actions queue, and a stronger trust narrative — Maya controls **which** reads happen, not just **how**).
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  GitHub connected — choose repos to scan                         │
+│  Default: nothing selected. Pick the repos in scope for SOC 2.   │
+│                                                                  │
+│  [ search ]                              [ Select all in <org> ] │
+│  ─────────────────────────────────────────────────────────────── │
+│  ☑  acme/orders-api               public_repo      Private       │
+│  ☑  acme/auth-service             public_repo      Private       │
+│  ☐  acme/marketing-site           public_repo      Public        │
+│  ☐  acme/data-science-notebooks   public_repo      Private       │
+│  ─────────────────────────────────────────────────────────────── │
+│                                          [ Cancel ] [ Save scope ]│
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ### Page 3: The Compliance Dashboard
 
 After she connects tools, the AuditOrchestrator runs in the background. Within a minute, the dashboard populates.

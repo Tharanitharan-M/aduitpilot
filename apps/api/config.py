@@ -82,6 +82,12 @@ class Settings(BaseSettings):
         ...,  # REQUIRED
         description="Clerk publishable key. Safe to expose to browser via NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.",
     )
+    # Explicit JWKS URL and issuer override — set these in staging/prod so JWT
+    # verification does not depend on string-parsing the publishable key.
+    # Example: https://gentle-anteater-25.clerk.accounts.dev/.well-known/jwks.json
+    clerk_jwks_url: str | None = None
+    # Example: https://gentle-anteater-25.clerk.accounts.dev
+    clerk_issuer_url: str | None = None
 
     # ── Cloudflare R2 (ADR-0008) — optional in development ───────────────────
     r2_account_id: str | None = None

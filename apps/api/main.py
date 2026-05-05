@@ -4,7 +4,7 @@ AuditPilot API — FastAPI entrypoint
 Initialises PostHog (if API key configured), mounts the SSE chat bridge,
 and exposes a /health probe.
 
-Refs: PLAN.md chunks 2.1, 2.7, 2.13, 2.14; ADR-0003, ADR-0009, ADR-0014.
+Refs: PLAN.md chunks 2.1, 2.7, 2.13, 2.14, 3.7, 3.8; ADR-0003, ADR-0009, ADR-0014.
 """
 
 from __future__ import annotations
@@ -29,6 +29,7 @@ from slowapi.util import get_remote_address
 from apps.api.agents.prompts import PromptLoader
 from apps.api.checkpointer import memory_checkpointer
 from apps.api.config import Settings
+from apps.api.db import close_pool, init_pool
 from apps.api.graph import build_graph
 from apps.api.jobs import (
     JobQueue,
@@ -58,6 +59,7 @@ from apps.api.observability.posthog import (
     make_observability_hook,
     shutdown_posthog,
 )
+from apps.api.routes import connectors_router
 from apps.api.sse.ai_sdk_v6 import (
     AI_SDK_V6_HEADER,
     AI_SDK_V6_VERSION,
@@ -168,6 +170,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_langfuse(settings)
     init_metrics(settings)
     _init_prompt_loader(settings)
+    # Application DB pool (Sprint 3.5 chunk 3.5.3). No-op when DATABASE_URL
+    # is unset so the dev/test path still boots.
+    try:
+        await init_pool(settings)
+    except Exception:  # noqa: BLE001
+        logger.exception("db.pool.init_failed — DB-backed routes will return 503")
     capture_event(
         posthog_client,
         "api_started",
@@ -233,6 +241,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             _redis_client = None
             _job_queue = None
 
+        # Close the application DB pool (Sprint 3.5 chunk 3.5.3).
+        await close_pool()
+
         await shutdown_langfuse()
         capture_event(
             posthog_client,
@@ -279,6 +290,7 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.include_router(connectors_router)
 
 
 @app.middleware("http")

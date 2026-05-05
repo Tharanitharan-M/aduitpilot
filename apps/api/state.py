@@ -113,6 +113,27 @@ class AuditPilotState(BaseModel):
     user_id: str | None = None
     scan_run_id: str | None = None
     thread_id: str | None = None
+    intent: str | None = None
+
+    # Sprint 3.5 chunk 3.5.5: the user-chosen repo scope, seeded from
+    # connector_scoped_repos at /chat call time. Empty list means the
+    # user has not yet picked any repos; the orchestrator refuses to
+    # start a readiness scan in that state (ADR-0015 default-deny).
+    # Each entry is GitHub's `provider_repo_id` (numeric, string-encoded
+    # for parity with the DB column).
+    repo_include_list: list[str] = Field(default_factory=list)
+
+
+# Intents that require a non-empty connector scope before any tool calls.
+# Free chat ("free_chat" or None) never requires a scope.
+SCOPE_REQUIRED_INTENTS: frozenset[str] = frozenset({"run_readiness_scan"})
+
+
+class ScanRunValidationError(Exception):
+    """Raised when an intent that requires a connector scope is invoked
+    with an empty ``repo_include_list``. The /chat SSE bridge catches
+    this and emits ``start`` → text → ``finish`` without any tool call
+    (Sprint 3.5 chunk 3.5.5)."""
 
 
 __all__ = [
@@ -120,4 +141,6 @@ __all__ = [
     "ControlAssessment",
     "Evidence",
     "Finding",
+    "ScanRunValidationError",
+    "SCOPE_REQUIRED_INTENTS",
 ]
