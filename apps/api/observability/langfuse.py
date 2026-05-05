@@ -20,11 +20,12 @@ Refs: PLAN.md chunk 2.8; ADR-0009; ADR-0011; system-design 6.3.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator
+from typing import Any
 
-from langfuse import Langfuse, get_client
+from langfuse import Langfuse
 
 from apps.api.config import Settings
 

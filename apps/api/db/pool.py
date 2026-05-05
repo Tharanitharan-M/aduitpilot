@@ -36,7 +36,7 @@ AppDbPool = AsyncConnectionPool
 
 
 async def init_pool(
-    settings: "Settings",
+    settings: Settings,
     *,
     min_size: int = 1,
     max_size: int = 10,

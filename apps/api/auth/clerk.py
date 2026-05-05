@@ -89,7 +89,9 @@ def _build_jwks_url(settings: Settings) -> str:
     return f"https://clerk.{pk}.com/.well-known/jwks.json"
 
 
-async def _verify_token_thread(token: str, jwks_url: str, issuer_url: str | None = None) -> dict[str, Any]:
+async def _verify_token_thread(
+    token: str, jwks_url: str, issuer_url: str | None = None
+) -> dict[str, Any]:
     """Blocking JWT decode offloaded to a thread pool via asyncio.to_thread.
 
     ``PyJWKClient.get_signing_key_from_jwt`` makes a synchronous HTTP call on

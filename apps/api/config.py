@@ -80,7 +80,10 @@ class Settings(BaseSettings):
     )
     clerk_publishable_key: str = Field(
         ...,  # REQUIRED
-        description="Clerk publishable key. Safe to expose to browser via NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.",
+        description=(
+            "Clerk publishable key. Safe to expose to browser"
+            " via NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY."
+        ),
     )
     # Explicit JWKS URL and issuer override — set these in staging/prod so JWT
     # verification does not depend on string-parsing the publishable key.

@@ -23,6 +23,7 @@ time); US-002, US-004, US-005.
 from __future__ import annotations
 
 import logging
+from datetime import UTC
 from functools import lru_cache
 
 import httpx
@@ -163,9 +164,9 @@ def _iso_from_clerk_timestamp(value: int | None) -> str | None:
     """
     if value is None:
         return None
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    return datetime.fromtimestamp(value / 1000, tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(value / 1000, tz=UTC).isoformat()
 
 
 async def _get_clerk_external_accounts(
@@ -387,7 +388,9 @@ async def get_me(
                     provider="github",
                     status=conn_status,
                     last_used_at=_iso_from_clerk_timestamp(acc.updated_at),
-                    error_message=None if conn_status == "connected" else "Re-authentication required",
+                    error_message=(
+                        None if conn_status == "connected" else "Re-authentication required"
+                    ),
                     scoped_repo_count=scoped_count,
                 )
             )

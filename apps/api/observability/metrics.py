@@ -23,7 +23,6 @@ and the $0/month demo path both stay happy.
 from __future__ import annotations
 
 import logging
-import os
 import threading
 from typing import Final
 from urllib.parse import unquote

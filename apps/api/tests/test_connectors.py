@@ -9,13 +9,12 @@ Refs: PLAN.md chunks 3.7, 3.8; ADR-0008.
 
 from __future__ import annotations
 
+import httpx
 import pytest
 import respx
-import httpx
 from fastapi.testclient import TestClient
 
 from apps.api.auth.clerk import ClerkUser
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -43,6 +42,7 @@ def _make_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-lf-fake")
 
     import importlib
+
     import apps.api.main as main_module
     main_module = importlib.reload(main_module)
 
@@ -58,7 +58,9 @@ def _make_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
 def test_get_me_returns_connected_github_connector(monkeypatch: pytest.MonkeyPatch) -> None:
     respx.get(
         f"https://api.clerk.com/v1/users/{FAKE_USER.user_id}"
-    ).mock(return_value=httpx.Response(200, json={"id": FAKE_USER.user_id, "external_accounts": [GITHUB_ACCOUNT]}))
+    ).mock(return_value=httpx.Response(
+        200, json={"id": FAKE_USER.user_id, "external_accounts": [GITHUB_ACCOUNT]}
+    ))
 
     client = _make_client(monkeypatch)
     r = client.get("/api/me", headers={"Authorization": "Bearer fake"})
@@ -74,11 +76,15 @@ def test_get_me_returns_connected_github_connector(monkeypatch: pytest.MonkeyPat
 
 
 @respx.mock
-def test_get_me_returns_error_status_when_github_unverified(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_get_me_returns_error_status_when_github_unverified(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     unverified = {**GITHUB_ACCOUNT, "verification": {"status": "failed"}}
     respx.get(
         f"https://api.clerk.com/v1/users/{FAKE_USER.user_id}"
-    ).mock(return_value=httpx.Response(200, json={"id": FAKE_USER.user_id, "external_accounts": [unverified]}))
+    ).mock(return_value=httpx.Response(
+        200, json={"id": FAKE_USER.user_id, "external_accounts": [unverified]}
+    ))
 
     client = _make_client(monkeypatch)
     r = client.get("/api/me", headers={"Authorization": "Bearer fake"})
@@ -93,7 +99,9 @@ def test_get_me_returns_error_status_when_github_unverified(monkeypatch: pytest.
 def test_get_me_returns_empty_connectors_when_no_github(monkeypatch: pytest.MonkeyPatch) -> None:
     respx.get(
         f"https://api.clerk.com/v1/users/{FAKE_USER.user_id}"
-    ).mock(return_value=httpx.Response(200, json={"id": FAKE_USER.user_id, "external_accounts": []}))
+    ).mock(return_value=httpx.Response(
+        200, json={"id": FAKE_USER.user_id, "external_accounts": []}
+    ))
 
     client = _make_client(monkeypatch)
     r = client.get("/api/me", headers={"Authorization": "Bearer fake"})
@@ -109,7 +117,9 @@ def test_delete_connector_returns_204(monkeypatch: pytest.MonkeyPatch) -> None:
     ext_id = "ext_github_001"
     respx.get(
         f"https://api.clerk.com/v1/users/{FAKE_USER.user_id}"
-    ).mock(return_value=httpx.Response(200, json={"id": FAKE_USER.user_id, "external_accounts": [GITHUB_ACCOUNT]}))
+    ).mock(return_value=httpx.Response(
+        200, json={"id": FAKE_USER.user_id, "external_accounts": [GITHUB_ACCOUNT]}
+    ))
     respx.delete(
         f"https://api.clerk.com/v1/users/{FAKE_USER.user_id}/external_accounts/{ext_id}"
     ).mock(return_value=httpx.Response(200, json={"deleted": True}))
@@ -124,7 +134,9 @@ def test_delete_connector_returns_204(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_delete_connector_returns_404_when_not_owned(monkeypatch: pytest.MonkeyPatch) -> None:
     respx.get(
         f"https://api.clerk.com/v1/users/{FAKE_USER.user_id}"
-    ).mock(return_value=httpx.Response(200, json={"id": FAKE_USER.user_id, "external_accounts": [GITHUB_ACCOUNT]}))
+    ).mock(return_value=httpx.Response(
+        200, json={"id": FAKE_USER.user_id, "external_accounts": [GITHUB_ACCOUNT]}
+    ))
 
     client = _make_client(monkeypatch)
     r = client.delete("/api/connectors/ext_other_999", headers={"Authorization": "Bearer fake"})
@@ -156,9 +168,11 @@ class _FakeCursor:
         q = " ".join(query.split())
         if q.startswith("SELECT COUNT(*) FROM connector_scoped_repos"):
             user_id, connector_id = params
-            self._rows = [
-                (sum(1 for r in self._store if r["user_id"] == user_id and r["connector_id"] == connector_id),)
-            ]
+            count = sum(
+                1 for r in self._store
+                if r["user_id"] == user_id and r["connector_id"] == connector_id
+            )
+            self._rows = [(count,)]
         elif q.startswith("SELECT provider_repo_id"):
             user_id, connector_id = params
             self._rows = [
@@ -256,8 +270,8 @@ def test_patch_scoped_repos_persists_selection_and_is_idempotent(
     client = _make_client(monkeypatch)
     fake_pool = _FakePool()
 
-    from apps.api.db import get_pool
     import apps.api.main as main_module
+    from apps.api.db import get_pool
     main_module.app.dependency_overrides[get_pool] = lambda: fake_pool
 
     body = {
@@ -317,8 +331,8 @@ def test_patch_scoped_repos_returns_404_when_not_owned(
 
     client = _make_client(monkeypatch)
     fake_pool = _FakePool()
-    from apps.api.db import get_pool
     import apps.api.main as main_module
+    from apps.api.db import get_pool
     main_module.app.dependency_overrides[get_pool] = lambda: fake_pool
 
     r = client.patch(
@@ -346,8 +360,8 @@ def test_patch_scoped_repos_rejects_extra_field(
 
     client = _make_client(monkeypatch)
     fake_pool = _FakePool()
-    from apps.api.db import get_pool
     import apps.api.main as main_module
+    from apps.api.db import get_pool
     main_module.app.dependency_overrides[get_pool] = lambda: fake_pool
 
     r = client.patch(

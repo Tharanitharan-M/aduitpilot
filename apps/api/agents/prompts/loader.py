@@ -15,10 +15,11 @@ import asyncio
 import dataclasses
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import yaml
 
@@ -169,9 +170,6 @@ class PromptLoader:
                 logger.warning(
                     "prompt.langfuse_timeout name=%s attempt=%d", name, attempt
                 )
-                continue
-            except asyncio.TimeoutError as exc:  # pragma: no cover — py3.10 compat
-                last_exc = exc
                 continue
             except Exception as exc:  # noqa: BLE001 — SDK raises varied types
                 last_exc = exc

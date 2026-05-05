@@ -9,5 +9,8 @@
     "build": "echo 'shared-types placeholder — types ship in Sprint 2'",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
   }
 }

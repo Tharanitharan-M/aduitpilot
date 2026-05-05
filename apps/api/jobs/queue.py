@@ -24,7 +24,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Awaitable, Callable, Final, Sequence
+from collections.abc import Awaitable, Callable, Sequence
+from typing import Final
 
 from apps.api.jobs.client import RedisLike
 from apps.api.jobs.exceptions import (

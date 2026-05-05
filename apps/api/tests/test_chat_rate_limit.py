@@ -11,7 +11,6 @@ client returns HTTP 429 within a single test run.
 
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
 
 import pytest

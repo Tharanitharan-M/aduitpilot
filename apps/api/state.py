@@ -17,7 +17,7 @@ system-design.md 4 (ERD), 6 (components).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from langchain_core.messages import AnyMessage
@@ -41,7 +41,7 @@ class Evidence(BaseModel):
     raw: dict[str, Any] = Field(default_factory=dict)
     content_hash: str | None = None
     collected_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
+        default_factory=lambda: datetime.now(UTC),
     )
 
 

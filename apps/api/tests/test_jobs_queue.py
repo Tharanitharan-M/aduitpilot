@@ -9,15 +9,14 @@ see :mod:`test_jobs_queue_upstash` (marked ``integration``).
 
 from __future__ import annotations
 
-import pytest
-
-pytest_plugins = ("pytest_asyncio",)
-
 import fakeredis
+import pytest
 
 from apps.api.jobs.exceptions import BudgetExceededError, FatalError, RetryableError
 from apps.api.jobs.queue import JobQueue
 from apps.api.jobs.schemas import JobMessage, JobType
+
+pytest_plugins = ("pytest_asyncio",)
 
 
 @pytest.fixture

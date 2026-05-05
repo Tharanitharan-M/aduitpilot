@@ -22,7 +22,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-from typing import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 
 from apps.api.jobs.exceptions import FatalError, RetryableError
 from apps.api.jobs.queue import JobQueue

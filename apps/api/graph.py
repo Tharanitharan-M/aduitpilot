@@ -37,7 +37,6 @@ from apps.api.state import (
     ControlAssessment,
 )
 
-
 _EMPTY_SCOPE_REFUSAL_TEXT = (
     "Pick at least one repo to scan. Open the connector card on your "
     "dashboard and click \"Configure scope\" to choose the repos you want "

@@ -13,9 +13,10 @@ import asyncio
 import logging
 import os
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from functools import lru_cache
-from typing import Any, AsyncIterator, Literal
+from typing import Any, Literal
 
 from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse
@@ -55,7 +56,6 @@ from apps.api.observability.posthog import (
     capture_event,
     capture_exception,
     init_posthog,
-    install_middleware,
     make_observability_hook,
     shutdown_posthog,
 )

@@ -8,7 +8,7 @@ Grafana verification).
 
 from __future__ import annotations
 
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 from opentelemetry.sdk.metrics import MeterProvider

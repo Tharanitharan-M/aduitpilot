@@ -60,7 +60,17 @@ only-include = []
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+# Tier-3 deferred to PLAN.md chunk 3.5.11 (Sprint 8 cleanup pass)
+ignore = [
+    "UP042",  # StrEnum migration — class X(str, Enum)
+    "B008",   # Depends(...) in FastAPI argument defaults
+    "B904",   # raise ... from err in except clauses
+    "SIM117", # merge nested with statements
+    "SIM105", # contextlib.suppress instead of try-except-pass
+]
 
 [tool.mypy]
 python_version = "3.12"

@@ -44,9 +44,9 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Literal
 
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
+from pydantic import BaseModel, ConfigDict
 
 logger = logging.getLogger(__name__)
-from pydantic import BaseModel, ConfigDict, Field
 
 AI_SDK_V6_HEADER = "x-vercel-ai-ui-message-stream"
 AI_SDK_V6_VERSION = "v1"
@@ -228,7 +228,7 @@ async def ui_message_stream_from_graph_updates(
                             )
                         )
                         pending_tool_calls.pop(tc_id, None)
-    except Exception as exc:  # noqa: BLE001 — surface any upstream fault
+    except Exception:  # noqa: BLE001 — surface any upstream fault
         # IMPORTANT: never put `repr(exc)` on the wire. ``repr()`` of a
         # psycopg / asyncpg / redis-py exception embeds the connection
         # string (with password) into the message — that would leak
