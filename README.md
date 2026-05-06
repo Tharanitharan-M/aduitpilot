@@ -77,7 +77,7 @@ Plus four community MCP servers (forked, security-reviewed) for read-only OAuth 
 
 ## Status
 
-Sprint 3.5 closed (2026-05-05). Sprints 0–3 + 3.5 are done; Sprint 4 (orchestrator wired to UI + control posture grid + Pending Actions) is next.
+Sprint 4 closed (2026-05-05). Sprints 0–4 are done; Sprint 5 (evidence table + real GitHub evidence collection via MCP) is next.
 
 What works end-to-end today:
 
@@ -85,10 +85,15 @@ What works end-to-end today:
 - Connect GitHub via read-only OAuth (`public_repo`, `read:org`); disconnect at will.
 - Repo-picker step between connect and first scan: choose which repos AuditPilot is allowed to read. Default-deny — nothing is selected unless the user picks it. Selection is persisted on the connector and editable from the dashboard.
 - Orchestrator refuses to start a `run_readiness_scan` against an empty repo scope before any LLM call (ADR-0015).
+- Click "Run readiness scan" — the orchestrator streams tool calls live via AI SDK 6 SSE, maps evidence to SOC 2 TSC clauses backed by NIST 800-53 controls, and renders tool cards for each lookup.
+- SOC 2 Trust Services Criteria posture grid (empty state in Sprint 4; live evidence wiring in Sprint 5).
+- Pending Actions queue with an approve / reject / mark-done / revoke state machine.
+- Cancel-token: closing the browser mid-scan stops the backend stream gracefully.
+- `compliance-kb-mcp` v0.2.0 published to [PyPI](https://pypi.org/project/compliance-kb-mcp/) and [npm](https://www.npmjs.com/package/@auditpilot/compliance-kb-mcp) — the first of five MCP servers under Apache 2.0.
 
-Test counts at end of Sprint 3.5: 115/115 pytest + 25/25 vitest green; `tsc --noEmit` clean.
+Test counts at end of Sprint 4: 158/158 pytest + 78/78 vitest green; `tsc --noEmit` clean.
 
-Full build runs May through July 2026 across eleven sprints (plus the inserted Sprint 3.5 per ADR-0015). Public demo URL target: July 1, 2026.
+Full build runs May through July 2026 across eleven sprints. Public demo URL target: July 1, 2026.
 
 ---
 

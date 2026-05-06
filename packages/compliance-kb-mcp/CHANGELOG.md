@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-05-02
+## [0.2.0] - 2026-05-05
+
+Published 2026-05-05:
+- PyPI: https://pypi.org/project/compliance-kb-mcp/
+- npm: https://www.npmjs.com/package/@auditpilot/compliance-kb-mcp
+
+> Artifacts were built 2026-05-02 and published after Sprint 4 end-to-end
+> validation confirmed the orchestrator consumes the server correctly over
+> the stdio MCP transport.
 
 ### Changed
 
