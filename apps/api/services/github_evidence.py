@@ -41,7 +41,7 @@ import json
 import logging
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import Any, TypeAlias
+from typing import Any
 
 import httpx
 from opentelemetry import trace
@@ -51,8 +51,9 @@ from apps.api.state import Evidence
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
 
-# ── Type alias (matches apps.api.services.evidence_collector.EvidenceCollector)
-EvidenceCollector: TypeAlias = Callable[
+# ── Type alias (matches apps.api.services.evidence_collector.EvidenceCollector).
+#    PEP 695 ``type`` syntax (Python 3.12+).
+type EvidenceCollector = Callable[
     ...,
     Awaitable[list[Evidence]],
 ]
@@ -116,11 +117,21 @@ def _make_evidence(
     """Build one Evidence row from a normalized GitHub API payload."""
 
     h = _content_hash(normalized)
+    base_raw: dict[str, Any] = {
+        "check_type": check_type,
+        "full_name": full_name,
+        "status": status_label,
+    }
+    raw = (
+        {**base_raw, **normalized}
+        if isinstance(normalized, dict)
+        else {**base_raw, "data": normalized}
+    )
     return Evidence(
         id=f"ev_github_{check_type}_{h[:16]}",
         source_type="github",
         source_uri=f"github://{full_name}/{check_type}",
-        raw={"check_type": check_type, "full_name": full_name, "status": status_label, **normalized} if isinstance(normalized, dict) else {"check_type": check_type, "full_name": full_name, "status": status_label, "data": normalized},
+        raw=raw,
         content_hash=h,
         collected_at=datetime.now(UTC),
         scan_run_id=scan_run_id,
@@ -365,10 +376,9 @@ async def check_code_scanning(
                 # Count is in the X-Total-Count header if present, else len(body).
                 enabled = True
                 total_header = r.headers.get("x-total-count")
-                if total_header is not None:
-                    open_alert_count = int(total_header)
-                else:
-                    open_alert_count = len(r.json())
+                open_alert_count = (
+                    int(total_header) if total_header is not None else len(r.json())
+                )
             elif r.status_code == 404:
                 body = r.json()
                 msg = body.get("message", "")
@@ -439,10 +449,9 @@ async def check_secret_scanning(
             if r.status_code == 200:
                 enabled = True
                 total_header = r.headers.get("x-total-count")
-                if total_header is not None:
-                    open_alert_count = int(total_header)
-                else:
-                    open_alert_count = len(r.json())
+                open_alert_count = (
+                    int(total_header) if total_header is not None else len(r.json())
+                )
             elif r.status_code == 404:
                 # Disabled — not an error worth logging.
                 pass
@@ -464,12 +473,18 @@ async def check_secret_scanning(
         "open_alert_count": open_alert_count,
     })
 
+    if enabled and open_alert_count == 0:
+        secret_status = "passing"
+    elif not enabled:
+        secret_status = "failing"
+    else:
+        secret_status = "partial"
     return [
         _make_evidence(
             check_type="secret-scanning",
             full_name=full_name,
             normalized=normalized,
-            status_label="passing" if (enabled and open_alert_count == 0) else ("failing" if not enabled else "partial"),
+            status_label=secret_status,
             scan_run_id=scan_run_id,
         )
     ]

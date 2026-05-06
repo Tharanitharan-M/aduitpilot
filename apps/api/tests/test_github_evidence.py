@@ -6,7 +6,6 @@ Read-only invariant: every check uses GET; no POST/PUT/PATCH appears anywhere.
 
 from __future__ import annotations
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,7 +20,6 @@ from apps.api.services.github_evidence import (
     check_secret_scanning,
     make_github_evidence_collector,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

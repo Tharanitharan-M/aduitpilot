@@ -34,7 +34,6 @@ from apps.api.agents.models import (
 )
 from apps.api.config import Settings
 
-
 _TEST_ENV = {
     "ENVIRONMENT": "development",
     "DATABASE_URL": "postgres://test:test@localhost:5432/test",
@@ -117,7 +116,7 @@ def test_parse_model_string_rejects_invalid(bad_string: str) -> None:
 def test_supported_providers_set_is_stable() -> None:
     """The factory's contract — these three providers ship in v1."""
 
-    assert SUPPORTED_PROVIDERS == frozenset({"google-gla", "anthropic", "openai"})
+    assert frozenset({"google-gla", "anthropic", "openai"}) == SUPPORTED_PROVIDERS
 
 
 # ── build_model: per-provider branches ──────────────────────────────────────

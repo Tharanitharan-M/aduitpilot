@@ -36,7 +36,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections.abc import Awaitable, Callable
 from typing import Any, cast
 
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
@@ -206,14 +205,14 @@ def build_graph(
                     asyncio.gather(*tasks, return_exceptions=True),
                     timeout=120.0,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "evidence.collect_timeout repo_count=%d — partial result returned",
                     len(state.repo_include_list),
                 )
                 span.set_attribute("evidence.timed_out", True)
                 results = [
-                    asyncio.TimeoutError("collect_evidence wall-clock cap")
+                    TimeoutError("collect_evidence wall-clock cap")
                     for _ in state.repo_include_list
                 ]
 

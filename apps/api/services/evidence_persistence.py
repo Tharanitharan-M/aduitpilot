@@ -30,6 +30,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import weakref
 from typing import Any
 
 import httpx
@@ -68,7 +69,6 @@ tracer = trace.get_tracer(__name__)
 # of hammering the DB with failing registration attempts (python-
 # reviewer F1) or binding a raw list[float] that has no registered
 # pgvector adapter and would crash mid-INSERT (python-reviewer F2).
-import weakref
 
 _registered_conns: weakref.WeakSet[Any] = weakref.WeakSet()
 _adapter_disabled: bool = False

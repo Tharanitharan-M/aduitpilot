@@ -16,7 +16,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import status
 from httpx import ASGITransport, AsyncClient
 
 _TEST_ENV = {
@@ -117,10 +117,11 @@ async def test_chat_401_response_includes_www_authenticate_header(
 @pytest.mark.asyncio
 async def test_chat_succeeds_with_overridden_dep():
     """Sanity check: dep override lets authenticated calls through."""
-    from apps.api import main as main_module
-    from apps.api.auth.clerk import ClerkUser, verify_clerk_token
     from pydantic_ai.messages import ModelResponse, TextPart
     from pydantic_ai.models.function import AgentInfo, FunctionModel
+
+    from apps.api import main as main_module
+    from apps.api.auth.clerk import ClerkUser, verify_clerk_token
 
     def _stub_model(messages, info: AgentInfo):
         return ModelResponse(parts=[TextPart(content="ok")])

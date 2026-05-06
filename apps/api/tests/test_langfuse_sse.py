@@ -98,9 +98,8 @@ def fake_langfuse_client():
 @pytest.fixture
 async def client(lookup_then_reply_model, fake_langfuse_client):
     from apps.api import main as main_module
-    from apps.api.observability import langfuse as lf_module
-
     from apps.api.auth.clerk import ClerkUser, verify_clerk_token
+    from apps.api.observability import langfuse as lf_module
 
     _fake_user = ClerkUser(user_id="user_test", session_id="sess_test")
 
@@ -169,9 +168,8 @@ async def test_finish_metadata_ommits_trace_when_langfuse_disabled(
     """With fake Langfuse keys (ADR-0011 offline fallback), no trace_id fires."""
 
     from apps.api import main as main_module
-    from apps.api.observability import langfuse as lf_module
-
     from apps.api.auth.clerk import ClerkUser, verify_clerk_token
+    from apps.api.observability import langfuse as lf_module
 
     _fake_user = ClerkUser(user_id="user_test", session_id="sess_test")
 

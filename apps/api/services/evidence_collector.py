@@ -26,16 +26,14 @@ import hashlib
 import json
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
-from typing import TypeAlias
 
 from apps.api.state import Evidence
-
 
 # A coroutine that, given a repo id and an optional scan_run id, returns
 # zero or more Evidence rows for that repo. The graph node fans these
 # out via ``asyncio.gather(*tasks, return_exceptions=True)`` so per-repo
-# failures isolate.
-EvidenceCollector: TypeAlias = Callable[
+# failures isolate. PEP 695 ``type`` syntax (Python 3.12+).
+type EvidenceCollector = Callable[
     ...,  # keyword-only: repo_id=..., scan_run_id=...
     Awaitable[list[Evidence]],
 ]

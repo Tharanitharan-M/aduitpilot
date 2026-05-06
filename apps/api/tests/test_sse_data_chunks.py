@@ -25,7 +25,6 @@ from apps.api.sse.ai_sdk_v6 import (
 )
 from apps.api.state import ControlAssessment, Evidence
 
-
 # ── _extract_control_map ─────────────────────────────────────────────────────
 
 

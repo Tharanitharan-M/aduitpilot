@@ -19,12 +19,10 @@ from functools import lru_cache
 from typing import Annotated, Any, Literal
 
 import httpx
-
-from opentelemetry import trace
-
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from opentelemetry import trace
 from posthog import Posthog
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_ai.models import Model
@@ -34,9 +32,10 @@ from slowapi.util import get_remote_address
 
 from apps.api.agents.models import build_model
 from apps.api.agents.prompts import PromptLoader
+from apps.api.auth.clerk import ClerkUser, verify_clerk_token
 from apps.api.checkpointer import memory_checkpointer
 from apps.api.config import Settings
-from apps.api.db import close_pool, init_pool
+from apps.api.db import AppDbPoolOptionalDep, close_pool, init_pool
 from apps.api.graph import build_graph
 from apps.api.jobs import (
     JobQueue,
@@ -65,8 +64,6 @@ from apps.api.observability.posthog import (
     make_observability_hook,
     shutdown_posthog,
 )
-from apps.api.auth.clerk import ClerkUser, verify_clerk_token
-from apps.api.db import AppDbPoolOptionalDep
 from apps.api.routes import actions_router, connectors_router
 from apps.api.services.github_evidence import make_github_evidence_collector
 from apps.api.sse.ai_sdk_v6 import (
