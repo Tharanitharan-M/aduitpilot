@@ -118,10 +118,16 @@ export function ScanChat({
         )}
       </div>
 
-      {/* Visible error surface — shown when the proxy or stream fails. */}
+      {/* Visible error surface — shown when the proxy or stream fails.
+          Sprint 4 chunk 4.14 — ``aria-live="assertive"`` interrupts the
+          screen reader, ``aria-atomic`` reads the whole message, and the
+          existing ``role="alert"`` keeps the assertive politeness without
+          needing a redundant value. */}
       {error && (
         <div
           role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
           data-testid="scan-chat-error"
           className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
@@ -129,9 +135,18 @@ export function ScanChat({
         </div>
       )}
 
-      {/* Message thread */}
+      {/* Message thread.
+          Sprint 4 chunk 4.14 — ``aria-live="polite"`` so screen readers
+          announce new assistant turns without interrupting whatever the
+          user is reading. ``aria-busy`` flips during the stream so AT
+          knows updates are in progress and can wait for the quiet
+          moment before reading the final message. */}
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions text"
+        aria-busy={isStreaming}
         className="flex max-h-[60vh] min-h-[200px] flex-col gap-3 overflow-y-auto rounded-xl border bg-card p-4"
         aria-label="Chat messages"
       >
@@ -148,7 +163,11 @@ export function ScanChat({
         ))}
 
         {isStreaming && messages.length === 0 && (
-          <div className="space-y-2">
+          <div
+            role="status"
+            aria-label="Streaming readiness scan response"
+            className="space-y-2"
+          >
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </div>

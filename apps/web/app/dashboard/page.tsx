@@ -23,6 +23,7 @@ import { RepoList } from "@/components/repo-list"
 import { ScanWorkspace } from "@/components/scan-workspace"
 import { ControlPostureGrid } from "@/components/control-posture-grid"
 import { PendingActions } from "@/components/pending-actions"
+import { IslandErrorBoundary } from "@/components/error-boundary"
 import { getMeData } from "@/lib/me"
 
 /**
@@ -91,14 +92,18 @@ export default async function DashboardPage() {
       </div>
 
       {/* Connectors section — chunk 3.6, 3.9. Debug flag flips both Connect
-          and Disconnect to always-enabled and renders a raw-payload panel. */}
+          and Disconnect to always-enabled and renders a raw-payload panel.
+          Sprint 4 chunk 4.19 — error boundary keeps the rest of the
+          dashboard rendered if ConnectorCard crashes. */}
       <section aria-label="Connectors">
         <h2 className="mb-4 text-lg font-semibold">Connectors</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <ConnectorCard
-            connector={githubConnector}
-            debug={process.env.NEXT_PUBLIC_CONNECTOR_DEBUG === "true"}
-          />
+          <IslandErrorBoundary name="ConnectorCard">
+            <ConnectorCard
+              connector={githubConnector}
+              debug={process.env.NEXT_PUBLIC_CONNECTOR_DEBUG === "true"}
+            />
+          </IslandErrorBoundary>
         </div>
       </section>
 
@@ -106,7 +111,9 @@ export default async function DashboardPage() {
       {repos.length > 0 && (
         <section aria-label="Connected repositories">
           <h2 className="mb-4 text-lg font-semibold">Connected repositories</h2>
-          <RepoList repos={repos} />
+          <IslandErrorBoundary name="RepoList">
+            <RepoList repos={repos} />
+          </IslandErrorBoundary>
         </section>
       )}
 
@@ -120,19 +127,25 @@ export default async function DashboardPage() {
           empty-state grid + self-fetching pending actions so the page
           still renders the connector CTA above. */}
       {githubConnector ? (
-        <ScanWorkspace
-          connectorId={githubConnector.id}
-          repoIncludeList={scopedRepoIds}
-        />
+        <IslandErrorBoundary name="ScanWorkspace">
+          <ScanWorkspace
+            connectorId={githubConnector.id}
+            repoIncludeList={scopedRepoIds}
+          />
+        </IslandErrorBoundary>
       ) : (
         <>
           <section aria-label="SOC 2 TSC control posture">
             <h2 className="mb-4 text-lg font-semibold">Control Posture</h2>
-            <ControlPostureGrid assessments={[]} />
+            <IslandErrorBoundary name="ControlPostureGrid">
+              <ControlPostureGrid assessments={[]} />
+            </IslandErrorBoundary>
           </section>
           <section aria-label="Pending actions">
             <h2 className="mb-4 text-lg font-semibold">Pending Actions</h2>
-            <PendingActions />
+            <IslandErrorBoundary name="PendingActions">
+              <PendingActions />
+            </IslandErrorBoundary>
           </section>
         </>
       )}

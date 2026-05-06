@@ -22,7 +22,7 @@
  * Refs: PLAN.md chunk 4.7; US-007; ADR-0008.
  */
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -435,17 +435,48 @@ export function PendingActions() {
   const [actions, setActions] = useState<ActionOut[]>([])
   const [rowStates, setRowStates] = useState<Record<string, RowState>>({})
 
+  // Sprint 4 chunk 4.18 — race guard.
+  //
+  // Two failure modes the guard closes:
+  //
+  // 1. Component-unmount race. The user navigates away mid-fetch; the
+  //    in-flight ``fetch`` resolves and the resolver calls ``setState`` on
+  //    an unmounted component (React logs a warning, and worse: a stale
+  //    response can leak across navigations).
+  // 2. Concurrent-load race. ``load()`` is invoked again (via mutation
+  //    success or a future polling timer) while the previous request is
+  //    still in flight. Whichever response arrives second wins, even if
+  //    its underlying snapshot is older — the UI flickers between two
+  //    valid-but-stale states.
+  //
+  // ``loadGenerationRef`` increments on every ``load()`` call. Every
+  // resolver checks ``loadGenerationRef.current === myGeneration`` before
+  // calling setState — older generations silently discard their results.
+  // ``mountedRef`` flips to false on cleanup so post-unmount setState is
+  // also blocked. Both refs combined cover both failure modes.
+  const mountedRef = useRef(true)
+  const loadGenerationRef = useRef(0)
+
   // ── Fetch ──────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
+    const myGeneration = ++loadGenerationRef.current
     setLoadState("loading")
     try {
       const res = await fetch("/api/actions", { cache: "no-store" })
+      // Race guard: this response is stale if a newer load() ran after us.
+      if (!mountedRef.current || loadGenerationRef.current !== myGeneration) {
+        return
+      }
       if (!res.ok) {
         setLoadState("error")
         return
       }
       const data = await res.json() as { actions: ActionOut[]; count: number }
+      // Re-check after the second await — JSON parse can be slow on big payloads.
+      if (!mountedRef.current || loadGenerationRef.current !== myGeneration) {
+        return
+      }
       setActions(data.actions ?? [])
       // Initialise per-row state for any new action ids.
       setRowStates((prev) => {
@@ -457,11 +488,20 @@ export function PendingActions() {
       })
       setLoadState("ready")
     } catch {
+      if (!mountedRef.current || loadGenerationRef.current !== myGeneration) {
+        return
+      }
       setLoadState("error")
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    mountedRef.current = true
+    load()
+    return () => {
+      mountedRef.current = false
+    }
+  }, [load])
 
   // ── Row state helpers ──────────────────────────────────────────────────
 
