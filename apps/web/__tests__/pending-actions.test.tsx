@@ -393,8 +393,8 @@ describe("PendingActions", () => {
     expect(screen.queryByTestId("action-button-mark-done")).not.toBeInTheDocument()
   })
 
-  // Terminal state — no buttons for completed ───────────────────────────────
-  it("renders no action buttons for completed status", async () => {
+  // Sprint 9 chunk 9.15 — completed actions get a Revert button.
+  it("renders only the Revert button for completed status", async () => {
     global.fetch = mockFetchGet([completedAction])
     render(<PendingActions />)
     await waitFor(() =>
@@ -402,6 +402,47 @@ describe("PendingActions", () => {
     )
     expect(screen.queryByTestId("action-button-approve")).not.toBeInTheDocument()
     expect(screen.queryByTestId("action-button-mark-done")).not.toBeInTheDocument()
+    expect(screen.getByTestId("action-button-revert")).toBeInTheDocument()
+  })
+
+  // Sprint 9 chunk 9.15 — Revert flow happy path.
+  it("sends PATCH {status: revoked, reason} when Revert flow is confirmed", async () => {
+    const revokedResult: ActionOut = {
+      ...completedAction,
+      status: "revoked",
+      revoked_reason: "Compliance team asked us to redo the fix.",
+      revoked_at: "2026-05-09T01:00:00Z",
+    }
+    global.fetch = mockFetchGetAndPatch([completedAction], revokedResult)
+    render(<PendingActions />)
+    await waitFor(() => screen.getByTestId("action-button-revert"))
+    fireEvent.click(screen.getByTestId("action-button-revert"))
+    fireEvent.change(screen.getByTestId("action-revert-reason-input"), {
+      target: { value: "Compliance team asked us to redo the fix." },
+    })
+    fireEvent.click(screen.getByTestId("action-button-confirm-revert"))
+    await waitFor(() => {
+      expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2)
+    })
+    const patchCall = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[1]
+    expect(patchCall[0]).toBe(`/api/actions/${completedAction.id}`)
+    const sent = JSON.parse(patchCall[1].body)
+    expect(sent).toEqual({
+      status: "revoked",
+      reason: "Compliance team asked us to redo the fix.",
+    })
+  })
+
+  // Sprint 9 chunk 9.15 — empty reason is blocked client-side.
+  it("Revert without reason does not PATCH", async () => {
+    global.fetch = mockFetchGet([completedAction])
+    render(<PendingActions />)
+    await waitFor(() => screen.getByTestId("action-button-revert"))
+    fireEvent.click(screen.getByTestId("action-button-revert"))
+    fireEvent.click(screen.getByTestId("action-button-confirm-revert"))
+    expect(screen.getByTestId("action-revert-reason-error")).toBeInTheDocument()
+    // Only the initial GET was made.
+    expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1)
   })
 
   // tsc_id badge rendered ───────────────────────────────────────────────────

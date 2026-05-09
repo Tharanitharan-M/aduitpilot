@@ -67,9 +67,11 @@ from apps.api.observability.posthog import (
 from apps.api.routes import (
     actions_router,
     connectors_router,
+    drift_router,
     mock_audit_router,
     policies_router,
     questionnaire_router,
+    scan_runs_router,
 )
 from apps.api.routes.policies import ResumeRequest, _upsert_policy_draft
 from apps.api.services.github_evidence import make_github_evidence_collector
@@ -139,7 +141,16 @@ def _build_mock_audit_handler():
     )
 
 
-async def _noop_drift_scan(message: Any) -> None:
+def _build_drift_scan_handler():
+    """Wire the drift detector to the drift.scan job (Sprint 9 chunks 9.4, 9.6)."""
+
+    from apps.api.db import get_pool_optional
+    from apps.api.services.drift_worker import DriftScanHandler
+
+    return DriftScanHandler(pool_factory=get_pool_optional)
+
+
+async def _noop_drift_scan(message: Any) -> None:  # pragma: no cover - kept for tests
     logger.info("job.handler.stub drift.scan user_id=%s", message.user_id)
 
 
@@ -161,7 +172,7 @@ def _build_default_handlers() -> dict[JobType, Any]:
         JobType.QUESTIONNAIRE_FILL: _build_questionnaire_fill_handler(),
         JobType.POLICY_FINALIZE: _noop_policy_finalize,
         JobType.MOCK_AUDIT_RUN: _build_mock_audit_handler(),
-        JobType.DRIFT_SCAN: _noop_drift_scan,
+        JobType.DRIFT_SCAN: _build_drift_scan_handler(),
         JobType.EVIDENCE_COMPACT: _noop_evidence_compact,
     }
 
@@ -342,6 +353,8 @@ app.include_router(actions_router)
 app.include_router(policies_router)
 app.include_router(questionnaire_router)
 app.include_router(mock_audit_router)
+app.include_router(drift_router)
+app.include_router(scan_runs_router)
 
 
 @app.middleware("http")

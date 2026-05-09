@@ -77,7 +77,7 @@ Plus four community MCP servers (forked, security-reviewed) for read-only OAuth 
 
 ## Status
 
-Sprint 4 closed (2026-05-05). Sprints 0–4 are done; Sprint 5 (evidence table + real GitHub evidence collection via MCP) is next.
+Sprint 9 closed (2026-05-09). Sprints 0–9 are done; Sprint 10 (eval suite + judge validation + prompt management) is next.
 
 What works end-to-end today:
 
@@ -86,12 +86,17 @@ What works end-to-end today:
 - Repo-picker step between connect and first scan: choose which repos AuditPilot is allowed to read. Default-deny — nothing is selected unless the user picks it. Selection is persisted on the connector and editable from the dashboard.
 - Orchestrator refuses to start a `run_readiness_scan` against an empty repo scope before any LLM call (ADR-0015).
 - Click "Run readiness scan" — the orchestrator streams tool calls live via AI SDK 6 SSE, maps evidence to SOC 2 TSC clauses backed by NIST 800-53 controls, and renders tool cards for each lookup.
-- SOC 2 Trust Services Criteria posture grid (empty state in Sprint 4; live evidence wiring in Sprint 5).
-- Pending Actions queue with an approve / reject / mark-done / revoke state machine.
+- SOC 2 Trust Services Criteria posture grid with control drill-down panel (status, NIST refs, evidence list, related actions).
+- Pending Actions queue with an approve / reject / mark-done / revert state machine. Revert flips a completed action back to revoked with a required reason.
+- Policies workspace: render IRP, Access Control, Change Management, Vendor Management with live citation slots from the user's own scan.
+- Questionnaire workspace: drag-drop a SIG-Lite XLSX, get a draft fill grouped by domain with citation pickers and inline editing.
+- Mock readiness challenge: orchestrator hands the scan to the AdversarialAuditor over A2A v1.0; findings + Markdown gap report download.
+- Drift watcher: Vercel Cron every 6 hours diffs evidence projections, surfaces real configuration changes (not cosmetic noise) with 2-scan flap protection. Resolve / dismiss with reason from the dashboard.
+- Scan runs page: re-run any past scan inheriting the user's current scope; pick two and compare side-by-side with regression / improvement coloured cells.
 - Cancel-token: closing the browser mid-scan stops the backend stream gracefully.
-- `compliance-kb-mcp` v0.2.0 published to [PyPI](https://pypi.org/project/compliance-kb-mcp/) and [npm](https://www.npmjs.com/package/@auditpilot/compliance-kb-mcp) — the first of five MCP servers under Apache 2.0.
+- `compliance-kb-mcp` v0.2.0 published to [PyPI](https://pypi.org/project/compliance-kb-mcp/) and [npm](https://www.npmjs.com/package/@auditpilot/compliance-kb-mcp). `evidence-store-mcp`, `policy-template-mcp`, `questionnaire-mcp`, `drift-watcher-mcp` v0.1.0 ready for publish — five of five MCP servers under Apache 2.0.
 
-Test counts at end of Sprint 4: 158/158 pytest + 78/78 vitest green; `tsc --noEmit` clean.
+Test counts at end of Sprint 9: 254 + 23 + 25 + 25 + 23 + 21 + 36 = **407 pytest** plus **102 vitest**; `tsc --noEmit` clean, ruff clean. (One pre-existing Sprint 7 storage-mock flake on `test_handler_pipeline_marks_ready`.)
 
 Full build runs May through July 2026 across eleven sprints. Public demo URL target: July 1, 2026.
 

@@ -1,23 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "drift-watcher-mcp"
 version = "0.1.0"
-description = "Compliance drift detection MCP server — snapshot diff, normalized projection, 2-scan flap protection. AuditPilot MCP server."
+description = "MCP server for compliance drift detection — normalized projection diff, 2-scan flap protection, configurable persistence callbacks. Part of the AuditPilot reference architecture. Apache-2.0."
+readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Tharanitharan M", email = "tharanimtharan@gmail.com" }]
-readme = "README.md"
 requires-python = ">=3.11"
-keywords = ["mcp", "model-context-protocol", "auditpilot", "compliance", "soc2", "drift"]
+keywords = ["mcp", "model-context-protocol", "auditpilot", "compliance", "soc2", "drift", "drift-detection"]
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Intended Audience :: Developers",
 ]
 
 dependencies = [
   "mcp>=1.0",
   "pydantic>=2.0",
   "fastmcp>=0.3",
-  "psycopg[binary]>=3.1",
 ]
 
 [project.optional-dependencies]
@@ -34,15 +39,19 @@ drift-watcher-mcp = "drift_watcher_mcp.server:main"
 [project.urls]
 Homepage = "https://github.com/Tharanitharan-M/auditpilot"
 Repository = "https://github.com/Tharanitharan-M/drift-watcher-mcp"
+Issues = "https://github.com/Tharanitharan-M/auditpilot/issues"
+Changelog = "https://github.com/Tharanitharan-M/auditpilot/blob/main/packages/drift-watcher-mcp/CHANGELOG.md"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[tool.hatch.build.targets.wheel]
+packages = ["src/drift_watcher_mcp"]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+ignore = []
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

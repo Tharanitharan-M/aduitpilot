@@ -64,6 +64,9 @@ jobs:
           uv pip install --system -e packages/compliance-kb-mcp
           uv pip install --system -e packages/policy-template-mcp
           uv pip install --system -e packages/questionnaire-mcp
+          # Sprint 9 chunk 9.4 — apps/api/services/drift.py imports
+          # drift_watcher_mcp.{schemas,tools} directly.
+          uv pip install --system -e packages/drift-watcher-mcp
           uv pip install --system -e apps/auditor
           cd apps/api
           uv pip install --system -e ".[dev]"

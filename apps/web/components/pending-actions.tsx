@@ -150,6 +150,10 @@ interface ActionCardProps {
   isRejecting: boolean
   /** The current value of the reject reason input. */
   rejectReason: string
+  /** Whether this card is in "reverting" mode (Sprint 9 chunk 9.15). */
+  isReverting: boolean
+  /** The current value of the revert reason input (Sprint 9 chunk 9.15). */
+  revertReason: string
   /** Error string from the last PATCH call on this card. */
   patchError: string | null
   /** Whether the description is being edited inline. */
@@ -166,6 +170,10 @@ interface ActionCardProps {
   onEditChange: (v: string) => void
   onSaveEdit: () => void
   onCancelEdit: () => void
+  onStartRevert: () => void
+  onRevertReasonChange: (v: string) => void
+  onConfirmRevert: () => void
+  onCancelRevert: () => void
 }
 
 function ActionCard({
@@ -173,6 +181,8 @@ function ActionCard({
   localDescription,
   isRejecting,
   rejectReason,
+  isReverting,
+  revertReason,
   patchError,
   isEditing,
   editValue,
@@ -186,6 +196,10 @@ function ActionCard({
   onEditChange,
   onSaveEdit,
   onCancelEdit,
+  onStartRevert,
+  onRevertReasonChange,
+  onConfirmRevert,
+  onCancelRevert,
 }: ActionCardProps) {
   const description = localDescription ?? action.description
   const hasLocalEdit = localDescription !== null && localDescription !== action.description
@@ -290,6 +304,29 @@ function ActionCard({
           </div>
         )}
 
+        {/* Sprint 9 chunk 9.15 — Revert reason input. Mirrors the
+            reject flow: Revert is a destructive transition out of
+            'completed' so we require a reason before sending PATCH. */}
+        {isReverting && (
+          <div className="space-y-2 pt-1">
+            <Input
+              data-testid="action-revert-reason-input"
+              placeholder="Reason for revert (required)"
+              value={revertReason}
+              onChange={(e) => onRevertReasonChange(e.target.value)}
+              aria-label="Revert reason"
+            />
+            {revertReason.trim() === "" && (
+              <p
+                data-testid="action-revert-reason-error"
+                className="text-xs text-destructive"
+              >
+                A reason is required to revert this action.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Inline patch error */}
         {patchError && (
           <p
@@ -347,8 +384,33 @@ function ActionCard({
           </>
         )}
 
-        {/* Primary action buttons — only shown when not in edit/reject mode */}
-        {!isEditing && !isRejecting && (
+        {/* Sprint 9 chunk 9.15 — Revert confirm/cancel. */}
+        {isReverting && !isEditing && (
+          <>
+            <Button
+              size="sm"
+              variant="destructive"
+              data-testid="action-button-confirm-revert"
+              onClick={onConfirmRevert}
+            >
+              Confirm Revert
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              data-testid="action-button-cancel-revert"
+              onClick={onCancelRevert}
+            >
+              Cancel
+            </Button>
+          </>
+        )}
+
+        {/* Primary action buttons — only shown when not in edit/reject/revert mode.
+            typescript-reviewer M-3: include `!isReverting` so the Revert
+            trigger button does not render at the same time as the
+            Confirm Revert / Cancel pair. */}
+        {!isEditing && !isRejecting && !isReverting && (
           <>
             {action.status === "pending_review" && (
               <>
@@ -397,7 +459,23 @@ function ActionCard({
                 Mark as Done
               </Button>
             )}
-            {/* completed / rejected / revoked — no buttons (Sprint 9 adds Revert for completed) */}
+
+            {/* Sprint 9 chunk 9.15 — Revert affordance for completed actions.
+                Surfaces a reason modal (the IsReverting state above) and
+                fires PATCH /api/actions/{id} body={status:"revoked", reason}.
+                The action remains visible in history; the dashboard counter
+                drops it from "completed". */}
+            {action.status === "completed" && (
+              <Button
+                size="sm"
+                variant="outline"
+                data-testid="action-button-revert"
+                onClick={onStartRevert}
+              >
+                Revert
+              </Button>
+            )}
+            {/* rejected / revoked — terminal, no buttons */}
           </>
         )}
       </CardFooter>
@@ -414,6 +492,8 @@ interface RowState {
   localDescription: string | null
   isRejecting: boolean
   rejectReason: string
+  isReverting: boolean
+  revertReason: string
   patchError: string | null
   isEditing: boolean
   editValue: string
@@ -424,6 +504,8 @@ function defaultRowState(action: ActionOut): RowState {
     localDescription: null,
     isRejecting: false,
     rejectReason: "",
+    isReverting: false,
+    revertReason: "",
     patchError: null,
     isEditing: false,
     editValue: action.description,
@@ -595,6 +677,8 @@ export function PendingActions() {
             localDescription={rs.localDescription}
             isRejecting={rs.isRejecting}
             rejectReason={rs.rejectReason}
+            isReverting={rs.isReverting}
+            revertReason={rs.revertReason}
             patchError={rs.patchError}
             isEditing={rs.isEditing}
             editValue={rs.editValue}
@@ -642,6 +726,31 @@ export function PendingActions() {
             }
             onCancelEdit={() =>
               patchRow(action.id, { isEditing: false, editValue: rs.localDescription ?? action.description })
+            }
+            /* Sprint 9 chunk 9.15 — Revert flow.
+             * The state machine only allows completed -> revoked, and the
+             * `reason` field is required (the API returns 422 otherwise).
+             * The error path mirrors the reject flow: surface the upstream
+             * `detail` string inline on the card. */
+            onStartRevert={() =>
+              patchRow(action.id, {
+                isReverting: true,
+                revertReason: "",
+                patchError: null,
+              })
+            }
+            onRevertReasonChange={(v) =>
+              patchRow(action.id, { revertReason: v })
+            }
+            onConfirmRevert={() => {
+              if (rs.revertReason.trim() === "") return
+              void sendPatch(action.id, {
+                status: "revoked",
+                reason: rs.revertReason.trim(),
+              }).catch((err) => console.error("revert.unexpected_error", err))
+            }}
+            onCancelRevert={() =>
+              patchRow(action.id, { isReverting: false, revertReason: "" })
             }
           />
         )

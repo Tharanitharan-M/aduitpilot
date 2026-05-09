@@ -21,6 +21,8 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard/policies": "Policies",
   "/dashboard/questionnaire": "Questionnaire",
   "/dashboard/mock-audit": "Mock readiness challenge",
+  "/dashboard/drift": "Compliance drift",
+  "/dashboard/scan-runs": "Scan runs",
   "/dashboard/actions": "Actions",
   "/dashboard/chat": "Chat",
 }

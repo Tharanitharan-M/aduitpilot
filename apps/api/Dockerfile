@@ -59,6 +59,10 @@ COPY packages/questionnaire-mcp/README.md     ./packages/questionnaire-mcp/READM
 COPY packages/evidence-store-mcp/pyproject.toml ./packages/evidence-store-mcp/pyproject.toml
 COPY packages/evidence-store-mcp/src          ./packages/evidence-store-mcp/src
 COPY packages/evidence-store-mcp/README.md    ./packages/evidence-store-mcp/README.md
+# Sprint 9 chunk 9.4: api imports drift_watcher_mcp.{schemas,tools}.
+COPY packages/drift-watcher-mcp/pyproject.toml ./packages/drift-watcher-mcp/pyproject.toml
+COPY packages/drift-watcher-mcp/src           ./packages/drift-watcher-mcp/src
+COPY packages/drift-watcher-mcp/README.md     ./packages/drift-watcher-mcp/README.md
 # Sprint 8 chunk 8.4: api imports apps.auditor.a2a.agent_card.
 COPY apps/auditor/pyproject.toml              ./apps/auditor/pyproject.toml
 COPY apps/auditor                             ./apps/auditor
@@ -70,6 +74,7 @@ RUN uv pip install --system --no-cache \
         -e ./packages/policy-template-mcp \
         -e ./packages/questionnaire-mcp \
         -e ./packages/evidence-store-mcp \
+        -e ./packages/drift-watcher-mcp \
         -e ./apps/auditor \
         -e ./apps/api
 

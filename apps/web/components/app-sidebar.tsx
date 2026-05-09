@@ -11,6 +11,8 @@ import {
   MessageSquare,
   ClipboardList,
   Swords,
+  Activity,
+  History,
 } from "lucide-react"
 import {
   Sidebar,
@@ -32,6 +34,8 @@ const NAV_ITEMS = [
   { label: "Policies", href: "/dashboard/policies", icon: FileText },
   { label: "Questionnaire", href: "/dashboard/questionnaire", icon: ClipboardList },
   { label: "Mock Audit", href: "/dashboard/mock-audit", icon: Swords },
+  { label: "Drift", href: "/dashboard/drift", icon: Activity },
+  { label: "Scan Runs", href: "/dashboard/scan-runs", icon: History },
   { label: "Actions", href: "/dashboard/actions", icon: CheckSquare },
   { label: "Chat", href: "/dashboard/chat", icon: MessageSquare },
 ] as const
