@@ -29,7 +29,9 @@
 !**/.env.example
 
 # Docs / tests (not needed at runtime)
-**/README.md
+# README.md is intentionally NOT excluded — every pyproject.toml references
+# it as the package readme; hatchling errors if the file is missing during
+# the editable install in the api/auditor deps stages.
 **/CHANGELOG.md
 **/CONTRIBUTING.md
 **/CODE_OF_CONDUCT.md

@@ -9,26 +9,6 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "a2a-sdk"
-version = "1.0.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "culsans", marker = "python_full_version < '3.13'" },
-    { name = "google-api-core" },
-    { name = "googleapis-common-protos" },
-    { name = "httpx" },
-    { name = "httpx-sse" },
-    { name = "json-rpc" },
-    { name = "packaging" },
-    { name = "protobuf" },
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/88/f3/1c312eae0298542eef1a096be378a3ad2d20b171ea0ac6be26b81f542720/a2a_sdk-1.0.2.tar.gz", hash = "sha256:e4ee4dd509894c32c9a6df728319875fa4f049e70ae82476fa447353e3a4b648", size = 375193, upload-time = "2026-04-24T13:50:24.303Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/03/58c92a44e7b94a42614880df2365f074969e47067c4c736e31e855aca2fd/a2a_sdk-1.0.2-py3-none-any.whl", hash = "sha256:4dbc083b6808ee28207ac6daad263360f87612c37b2d06f5521efb530318141c", size = 234302, upload-time = "2026-04-24T13:50:22.412Z" },
-]
-
-[[package]]
 name = "ag-ui-protocol"
 version = "0.1.18"
 source = { registry = "https://pypi.org/simple" }
@@ -144,20 +124,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1a/e6/1b3566e103eca6da5be4ae6713e112a053725c584e96574caf117568ffef/aiohttp-3.13.4-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:cb19177205d93b881f3f89e6081593676043a6828f59c78c17a0fd6c1fbed2ba", size = 1782635, upload-time = "2026-03-28T17:18:43.073Z" },
     { url = "https://files.pythonhosted.org/packages/37/58/1b11c71904b8d079eb0c39fe664180dd1e14bebe5608e235d8bfbadc8929/aiohttp-3.13.4-cp314-cp314t-win32.whl", hash = "sha256:c606aa5656dab6552e52ca368e43869c916338346bfaf6304e15c58fb113ea30", size = 472537, upload-time = "2026-03-28T17:18:46.286Z" },
     { url = "https://files.pythonhosted.org/packages/bc/8f/87c56a1a1977d7dddea5b31e12189665a140fdb48a71e9038ff90bb564ec/aiohttp-3.13.4-cp314-cp314t-win_amd64.whl", hash = "sha256:014dcc10ec8ab8db681f0d68e939d1e9286a5aa2b993cbbdb0db130853e02144", size = 506381, upload-time = "2026-03-28T17:18:48.74Z" },
-]
-
-[[package]]
-name = "aiologic"
-version = "0.16.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "sniffio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-    { name = "wrapt" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/a8/13/50b91a3ea6b030d280d2654be97c48b6ed81753a50286ee43c646ba36d3c/aiologic-0.16.0.tar.gz", hash = "sha256:c267ccbd3ff417ec93e78d28d4d577ccca115d5797cdbd16785a551d9658858f", size = 225952, upload-time = "2025-11-27T23:48:41.195Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/27/206615942005471499f6fbc36621582e24d0686f33c74b2d018fcfd4fe67/aiologic-0.16.0-py3-none-any.whl", hash = "sha256:e00ce5f68c5607c864d26aec99c0a33a83bdf8237aa7312ffbb96805af67d8b6", size = 135193, upload-time = "2025-11-27T23:48:40.099Z" },
 ]
 
 [[package]]
@@ -293,9 +259,9 @@ name = "auditpilot-auditor"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "a2a-sdk" },
     { name = "cryptography" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "langfuse" },
     { name = "litellm" },
     { name = "opentelemetry-exporter-otlp" },
@@ -305,6 +271,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-ai" },
     { name = "pydantic-settings" },
+    { name = "pyyaml" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -313,14 +280,15 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "respx" },
     { name = "ruff" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "a2a-sdk", specifier = ">=1.0,<2.0" },
     { name = "cryptography", specifier = ">=42.0" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "langfuse", specifier = ">=3.0" },
     { name = "litellm", specifier = ">=1.50" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
@@ -333,6 +301,8 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "respx", marker = "extra == 'dev'", specifier = ">=0.21" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
@@ -657,19 +627,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1e/75/a2e55f99c16fcac7b5d6c1eb19ad8e00799854d6be5ca845f9259eae1681/cryptography-48.0.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:a5da777e32ffed6f85a7b2b3f7c5cbc88c146bfcd0a1d7baf5fcc6c52ee35dd4", size = 4960575, upload-time = "2026-05-04T22:59:09.851Z" },
     { url = "https://files.pythonhosted.org/packages/b8/23/6e6f32143ab5d8b36ca848a502c4bcd477ae75b9e1677e3530d669062578/cryptography-48.0.0-cp39-abi3-win32.whl", hash = "sha256:77a2ccbbe917f6710e05ba9adaa25fb5075620bf3ea6fb751997875aff4ae4bd", size = 3279117, upload-time = "2026-05-04T22:59:12.019Z" },
     { url = "https://files.pythonhosted.org/packages/9d/9a/0fea98a70cf1749d41d738836f6349d97945f7c89433a259a6c2642eefeb/cryptography-48.0.0-cp39-abi3-win_amd64.whl", hash = "sha256:16cd65b9330583e4619939b3a3843eec1e6e789744bb01e7c7e2e62e33c239c8", size = 3792100, upload-time = "2026-05-04T22:59:14.884Z" },
-]
-
-[[package]]
-name = "culsans"
-version = "0.11.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aiologic" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d9/e3/49afa1bc180e0d28008ec6bcdf82a4072d1c7a41032b5b759b60814ca4b0/culsans-0.11.0.tar.gz", hash = "sha256:0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33", size = 107546, upload-time = "2025-12-31T23:15:38.196Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/e0/5d/9fb19fb38f6d6120422064279ea5532e22b84aa2be8831d49607194feda3/culsans-0.11.0-py3-none-any.whl", hash = "sha256:278d118f63fc75b9db11b664b436a1b83cc30d9577127848ba41420e66eb5a47", size = 21811, upload-time = "2025-12-31T23:15:37.189Z" },
 ]
 
 [[package]]
@@ -1012,22 +969,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/be/30/11f3d683cf3b1d9612475ad8bfffe3423ce9f50fc617733109033e73a038/genai_prices-0.0.57.tar.gz", hash = "sha256:6e101e9c53975557ceffa237b0995787d81fe75aac12410f2898504188bcad89", size = 66555, upload-time = "2026-04-21T13:42:52.554Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a9/fe/d0095040c120d97cb63d055224ecd4e913dc5655315c203c8e83bf13aa86/genai_prices-0.0.57-py3-none-any.whl", hash = "sha256:14e50fb69cdc5a06ddb2a6df5a7fe06741b9e44304ce3f1728f56abdf1856cca", size = 69654, upload-time = "2026-04-21T13:42:51.236Z" },
-]
-
-[[package]]
-name = "google-api-core"
-version = "2.30.3"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "google-auth" },
-    { name = "googleapis-common-protos" },
-    { name = "proto-plus" },
-    { name = "protobuf" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/16/ce/502a57fb0ec752026d24df1280b162294b22a0afb98a326084f9a979138b/google_api_core-2.30.3.tar.gz", hash = "sha256:e601a37f148585319b26db36e219df68c5d07b6382cff2d580e83404e44d641b", size = 177001, upload-time = "2026-04-10T00:41:28.035Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/15/e56f351cf6ef1cfea58e6ac226a7318ed1deb2218c4b3cc9bd9e4b786c5a/google_api_core-2.30.3-py3-none-any.whl", hash = "sha256:a85761ba72c444dad5d611c2220633480b2b6be2521eca69cca2dbb3ffd6bfe8", size = 173274, upload-time = "2026-04-09T22:57:16.198Z" },
 ]
 
 [[package]]
@@ -1459,15 +1400,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/3b/dc/5f768c2e391e9afabe5d18e3221346deb5fb6338565f1ccc9e7c6d7befdd/joserfc-1.6.5.tar.gz", hash = "sha256:1482a7db78fb4602e44ed89e51b599d052e091288c7c532c5b694e20149dec48", size = 231881, upload-time = "2026-05-06T04:58:13.408Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/3b/ad1cb22e75c963b1f07c8a2329bf47227ce7e4361df5eb2fb101b2ce33ef/joserfc-1.6.5-py3-none-any.whl", hash = "sha256:e9878a0f8243fe7b95e11fdda81374ca9f7a689e302751579d3dfdeec559675e", size = 70464, upload-time = "2026-05-06T04:58:11.668Z" },
-]
-
-[[package]]
-name = "json-rpc"
-version = "1.15.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/6d/9e/59f4a5b7855ced7346ebf40a2e9a8942863f644378d956f68bcef2c88b90/json-rpc-1.15.0.tar.gz", hash = "sha256:e6441d56c1dcd54241c937d0a2dcd193bdf0bdc539b5316524713f554b7f85b9", size = 28854, upload-time = "2023-06-11T09:45:49.078Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/9e/820c4b086ad01ba7d77369fb8b11470a01fac9b4977f02e18659cf378b6b/json_rpc-1.15.0-py2.py3-none-any.whl", hash = "sha256:4a4668bbbe7116feb4abbd0f54e64a4adcf4b8f648f19ffa0848ad0f6606a9bf", size = 39450, upload-time = "2023-06-11T09:45:47.136Z" },
 ]
 
 [[package]]
@@ -2347,18 +2279,6 @@ wheels = [
 ]
 
 [[package]]
-name = "proto-plus"
-version = "1.27.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "protobuf" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/81/0d/94dfe80193e79d55258345901acd2917523d56e8381bc4dee7fd38e3868a/proto_plus-1.27.2.tar.gz", hash = "sha256:b2adde53adadf75737c44d3dcb0104fde65250dfc83ad59168b4aa3e574b6a24", size = 57204, upload-time = "2026-03-26T22:18:57.174Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/f3/1fba73eeffafc998a25d59703b63f8be4fe8a5cb12eaff7386a0ba0f7125/proto_plus-1.27.2-py3-none-any.whl", hash = "sha256:6432f75893d3b9e70b9c412f1d2f03f65b11fb164b793d14ae2ca01821d22718", size = 50450, upload-time = "2026-03-26T22:13:42.927Z" },
-]
-
-[[package]]
 name = "protobuf"
 version = "6.33.6"
 source = { registry = "https://pypi.org/simple" }
@@ -2937,6 +2857,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/5f/a4/98b9c7c6428a668bf7e42ebb7c79d576a1c3c1e3ae2d47e674b468388871/requests-2.33.1.tar.gz", hash = "sha256:18817f8c57c6263968bc123d237e3b8b08ac046f5456bd1e307ee8f4250d3517", size = 134120, upload-time = "2026-03-30T16:09:15.531Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d7/8e/7540e8a2036f79a125c1d2ebadf69ed7901608859186c856fa0388ef4197/requests-2.33.1-py3-none-any.whl", hash = "sha256:4e6d1ef462f3626a1f0a0a9c42dd93c63bad33f9f1c1937509b8c5c8718ab56a", size = 64947, upload-time = "2026-03-30T16:09:13.83Z" },
+]
+
+[[package]]
+name = "respx"
+version = "0.23.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/43/98/4e55c9c486404ec12373708d015ebce157966965a5ebe7f28ff2c784d41b/respx-0.23.1.tar.gz", hash = "sha256:242dcc6ce6b5b9bf621f5870c82a63997e8e82bc7c947f9ffe272b8f3dd5a780", size = 29243, upload-time = "2026-04-08T14:37:16.008Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1d/4a/221da6ca167db45693d8d26c7dc79ccfc978a440251bf6721c9aaf251ac0/respx-0.23.1-py2.py3-none-any.whl", hash = "sha256:b18004b029935384bccfa6d7d9d74b4ec9af73a081cc28600fffc0447f4b8c1a", size = 25557, upload-time = "2026-04-08T14:37:14.613Z" },
 ]
 
 [[package]]

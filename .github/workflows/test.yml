@@ -59,9 +59,12 @@ jobs:
           # directly (questionnaire_mcp brings openpyxl, policy_template_mcp
           # brings jinja2). Install them in editable mode before installing
           # the api itself so all transitive deps are on the path.
+          # Sprint 8 chunk 8.4 — the api also imports apps.auditor.a2a.agent_card
+          # for AgentCard verification, so install the auditor too.
           uv pip install --system -e packages/compliance-kb-mcp
           uv pip install --system -e packages/policy-template-mcp
           uv pip install --system -e packages/questionnaire-mcp
+          uv pip install --system -e apps/auditor
           cd apps/api
           uv pip install --system -e ".[dev]"
           pytest tests/ --tb=short -q

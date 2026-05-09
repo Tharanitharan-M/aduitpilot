@@ -5,10 +5,19 @@ build-backend = "hatchling.build"
 [project]
 name = "evidence-store-mcp"
 version = "0.1.0"
-description = "MCP server for AuditPilot evidence store — semantic search over collected evidence rows"
+description = "MCP server for AuditPilot evidence store — semantic search over collected compliance evidence rows. Apache-2.0."
 readme = "README.md"
 license = { text = "Apache-2.0" }
+authors = [{ name = "Tharanitharan M", email = "tharanimtharan@gmail.com" }]
 requires-python = ">=3.11"
+keywords = ["mcp", "model-context-protocol", "auditpilot", "compliance", "soc2", "evidence", "pgvector"]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Intended Audience :: Developers",
+]
 dependencies = [
     "mcp>=1.0",
     "pydantic>=2.0",
@@ -18,6 +27,12 @@ dependencies = [
     "opentelemetry-sdk>=1.24",
     "pgvector>=0.4.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Tharanitharan-M/auditpilot"
+Repository = "https://github.com/Tharanitharan-M/evidence-store-mcp"
+Issues = "https://github.com/Tharanitharan-M/auditpilot/issues"
+Changelog = "https://github.com/Tharanitharan-M/auditpilot/blob/main/packages/evidence-store-mcp/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

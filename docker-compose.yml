@@ -13,7 +13,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./apps/api/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auditpilot_dev"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -33,6 +33,26 @@ services:
       timeout: 3s
       retries: 5
 
+  # ── DB migration runner (one-shot) ──────────────────────────────────────────
+  # Runs every SQL file in apps/api/db/migrations/ in order, then exits. The
+  # api service depends_on this completing successfully. Each migration is
+  # idempotent (CREATE TABLE IF NOT EXISTS / DO $$ BEGIN ... END $$ guards),
+  # so re-running on every `docker compose up` is safe.
+  migrate:
+    image: postgres:16-alpine
+    container_name: auditpilot-migrate-1
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/auditpilot_dev"
+    volumes:
+      - ./apps/api/db/migrations:/migrations:ro
+      - ./apps/api/db/run_migrations.sh:/usr/local/bin/run_migrations.sh:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["MIGRATIONS_DIR=/migrations /usr/local/bin/run_migrations.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # ── FastAPI orchestration backend ───────────────────────────────────────────
   api:
     build:
@@ -44,25 +64,39 @@ services:
       - "8000:8000"
     volumes:
       - ./apps/api:/app/apps/api
+      - ./apps/auditor:/app/apps/auditor
       - ./packages:/app/packages
     env_file:
       - path: .env
         required: false           # .env is optional; copy from .env.example first
     environment:
+      # Container overrides — these always win over .env when running in compose.
       DATABASE_URL: "postgres://postgres:postgres@postgres:5432/auditpilot_dev"
+      DIRECT_URL: "postgres://postgres:postgres@postgres:5432/auditpilot_dev"
       REDIS_URL: "redis://redis:6379/0"
+      AUDITOR_URL: "http://auditor:8001"
+      ENVIRONMENT: "development"
       PYTHONUNBUFFERED: "1"
+      # Sane fallbacks so the api boots without a .env file. Replace with
+      # real keys in .env for any feature that calls Clerk / Gemini / Langfuse.
+      CLERK_PUBLISHABLE_KEY: "${CLERK_PUBLISHABLE_KEY:-pk_test_dev_placeholder}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY:-sk_test_dev_placeholder}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-dev-placeholder}"
+      LANGFUSE_PUBLIC_KEY: "${LANGFUSE_PUBLIC_KEY:-pk-lf-dev-placeholder}"
+      LANGFUSE_SECRET_KEY: "${LANGFUSE_SECRET_KEY:-sk-lf-dev-placeholder}"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 15s
+      start_period: 30s
 
   # ── AdversarialAuditor service ───────────────────────────────────────────────
   auditor:
@@ -73,13 +107,21 @@ services:
     container_name: auditpilot-auditor-1
     ports:
       - "8001:8001"
+    volumes:
+      - ./apps/auditor:/app/apps/auditor
+      - ./apps/api/agents/prompts:/app/apps/api/agents/prompts:ro
     env_file:
       - path: .env
         required: false
     environment:
+      ENVIRONMENT: "development"
+      AUDITOR_PUBLIC_URL: "http://auditor:8001"
+      ADVERSARIAL_MODEL: "${ADVERSARIAL_MODEL:-google-gla:gemini-2.5-flash-lite}"
+      LLM_BUDGET_CAP_USD: "${LLM_BUDGET_CAP_USD:-0.50}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-dev-placeholder}"
       PYTHONUNBUFFERED: "1"
     depends_on:
-      api:
+      postgres:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
@@ -101,12 +143,16 @@ services:
       - ./apps/web:/app/apps/web
       - ./packages:/app/packages
       - /app/node_modules
+      - /app/apps/web/node_modules
       - /app/apps/web/.next
     env_file:
       - path: .env
         required: false
     environment:
-      NEXT_PUBLIC_API_URL: "http://api:8000"
+      NEXT_PUBLIC_API_URL: "http://localhost:8000"
+      API_URL: "http://api:8000"
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-${CLERK_PUBLISHABLE_KEY:-pk_test_dev_placeholder}}"
+      CLERK_SECRET_KEY: "${CLERK_SECRET_KEY:-sk_test_dev_placeholder}"
     depends_on:
       api:
         condition: service_healthy

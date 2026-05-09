@@ -168,9 +168,27 @@ class Settings(BaseSettings):
     )
 
     # ── A2A — AdversarialAuditor (ADR-0002) ──────────────────────────────────
-    auditor_url: str = "http://localhost:8001"
-    auditor_a2a_public_key: str | None = None   # Ed25519 hex; set in Sprint 8
+    auditor_url: str = Field(
+        default="http://localhost:8001",
+        validation_alias=AliasChoices("auditor_url", "auditor_base_url"),
+        description="Base URL of the auditor service (Cloud Run in prod).",
+    )
+    auditor_a2a_public_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "auditor_a2a_public_key",
+            "auditor_agent_pubkey",
+        ),
+        description="Pinned Ed25519 public key (64 hex) for AgentCard verification.",
+    )
     a2a_private_key: SecretStr | None = None    # auditor service only
+    mock_audit_budget_usd: float | None = Field(
+        default=None,
+        description=(
+            "Per-mock-readiness-challenge USD ceiling. Falls back to "
+            "llm_budget_cap_usd when unset."
+        ),
+    )
 
     # ── Cron secret (Sprints 9, 11) ──────────────────────────────────────────
     cron_secret: SecretStr | None = None        # required in staging/production

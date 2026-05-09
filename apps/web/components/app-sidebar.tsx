@@ -10,6 +10,7 @@ import {
   CheckSquare,
   MessageSquare,
   ClipboardList,
+  Swords,
 } from "lucide-react"
 import {
   Sidebar,
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { label: "Controls", href: "/dashboard/controls", icon: ShieldCheck },
   { label: "Policies", href: "/dashboard/policies", icon: FileText },
   { label: "Questionnaire", href: "/dashboard/questionnaire", icon: ClipboardList },
+  { label: "Mock Audit", href: "/dashboard/mock-audit", icon: Swords },
   { label: "Actions", href: "/dashboard/actions", icon: CheckSquare },
   { label: "Chat", href: "/dashboard/chat", icon: MessageSquare },
 ] as const

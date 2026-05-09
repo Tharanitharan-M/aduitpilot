@@ -6,17 +6,22 @@
 ##  full-stack-with-Postgres-and-Redis case (see `make docker-up`).
 ##
 ##  Common targets:
-##    make help          — show this table
-##    make install       — bootstrap pnpm + uv deps
-##    make dev           — run FastAPI + Next.js together (Ctrl-C stops both)
-##    make api           — only the FastAPI backend (port 8000)
-##    make web           — only the Next.js frontend (port 3000)
-##    make stop          — kill anything bound to 3000 / 8000 (or stale procs)
-##    make health        — curl /health on both services
-##    make verify        — pnpm typecheck + pnpm test + uv run pytest
-##    make docker-up     — full stack via docker-compose (Postgres+Redis+API+web)
-##    make docker-down   — tear down docker-compose stack
-##    make docker-logs   — tail docker-compose logs
+##    make help            — show this table
+##    make install         — bootstrap pnpm + uv deps
+##    make dev             — run FastAPI + Next.js together (Ctrl-C stops both)
+##    make api             — only the FastAPI backend (port 8000)
+##    make web             — only the Next.js frontend (port 3000)
+##    make stop            — kill anything bound to 3000 / 8000 (or stale procs)
+##    make health          — curl /health on both services
+##    make verify          — pnpm typecheck + pnpm test + uv run pytest
+##    make docker-up       — full stack: postgres + redis + migrate + api + auditor + web
+##    make docker-down     — tear down docker-compose stack (keeps volumes)
+##    make docker-clean    — tear down AND delete Postgres + Redis volumes
+##    make docker-restart  — docker-down + docker-up
+##    make docker-logs     — tail docker-compose logs
+##    make docker-status   — `docker compose ps`
+##    make db-migrate      — apply every SQL migration against the running stack
+##    make db-reset        — drop + re-create + re-migrate auditpilot_dev (DEV ONLY)
 ##
 ##  Refs: PLAN.md Sprint 3 (chunks 3.1, 3.7, 3.9); ADR-0008.
 ## ============================================================================
@@ -104,17 +109,49 @@ verify:
 	@cd $(ROOT) && PYTHONPATH=$(ROOT) uv run --project apps/api pytest apps/api/tests/ -q
 	@printf "$(GREEN)✓ verify passed$(RESET)\n"
 
-## ── Docker (full stack including Postgres + Redis) ──────────────────────────
+## ── Docker (full stack including Postgres + Redis + auditor) ────────────────
 
 .PHONY: docker-up
 docker-up:
+	@printf "$(BLUE)▶ docker compose up (postgres + redis + migrate + api + auditor + web)$(RESET)\n"
 	docker compose up -d --build
 	@printf "$(GREEN)✓ stack up. Tail logs with:  make docker-logs$(RESET)\n"
+	@printf "$(BLUE)  Web:     http://localhost:$(WEB_PORT)\n"
+	@printf "  API:     http://localhost:$(API_PORT)/health\n"
+	@printf "  Auditor: http://localhost:8001/health$(RESET)\n"
 
 .PHONY: docker-down
 docker-down:
 	docker compose down
 
+.PHONY: docker-restart
+docker-restart: docker-down docker-up
+
+.PHONY: docker-clean
+docker-clean:
+	@printf "$(YELLOW)▶ tearing down stack AND deleting Postgres + Redis volumes$(RESET)\n"
+	docker compose down -v
+
 .PHONY: docker-logs
 docker-logs:
 	docker compose logs -f --tail=100
+
+.PHONY: docker-status
+docker-status:
+	@docker compose ps
+
+## ── DB migrations ───────────────────────────────────────────────────────────
+
+# Re-apply every SQL migration against the running compose stack. Idempotent.
+.PHONY: db-migrate
+db-migrate:
+	@printf "$(BLUE)▶ applying migrations against compose Postgres$(RESET)\n"
+	docker compose run --rm migrate
+
+# Drop every table the api owns. Useful when the schema gets wedged in dev.
+.PHONY: db-reset
+db-reset:
+	@printf "$(YELLOW)▶ dropping AND re-creating the auditpilot_dev database$(RESET)\n"
+	docker compose exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS auditpilot_dev"
+	docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE auditpilot_dev"
+	$(MAKE) db-migrate

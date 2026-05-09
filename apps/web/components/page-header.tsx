@@ -20,6 +20,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/dashboard/controls": "Controls",
   "/dashboard/policies": "Policies",
   "/dashboard/questionnaire": "Questionnaire",
+  "/dashboard/mock-audit": "Mock readiness challenge",
   "/dashboard/actions": "Actions",
   "/dashboard/chat": "Chat",
 }
@@ -61,14 +62,15 @@ export function PageHeader({ title, description, breadcrumbExtra }: PageHeaderPr
           <BreadcrumbList className="flex-nowrap overflow-hidden">
             {crumbs.map((crumb, i) => {
               const isLast = i === crumbs.length - 1
+              const key = `${i}-${crumb.href ?? crumb.label}`
               return (
-                <span key={crumb.label} className="contents">
+                <span key={key} className="contents">
                   {i > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem>
-                    {isLast ? (
+                    {isLast || !crumb.href ? (
                       <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
                     ) : (
-                      <BreadcrumbLink render={<Link href={crumb.href!} />}>
+                      <BreadcrumbLink render={<Link href={crumb.href} />}>
                         {crumb.label}
                       </BreadcrumbLink>
                     )}

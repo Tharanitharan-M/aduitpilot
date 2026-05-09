@@ -67,6 +67,7 @@ from apps.api.observability.posthog import (
 from apps.api.routes import (
     actions_router,
     connectors_router,
+    mock_audit_router,
     policies_router,
     questionnaire_router,
 )
@@ -115,8 +116,27 @@ async def _noop_policy_finalize(message: Any) -> None:
     logger.info("job.handler.stub policy.finalize user_id=%s", message.user_id)
 
 
-async def _noop_mock_audit_run(message: Any) -> None:
-    logger.info("job.handler.stub mock_audit.run user_id=%s", message.user_id)
+def _build_mock_audit_handler():
+    """Wire the AdversarialAuditor A2A client to the mock_audit.run worker."""
+    from apps.api.agents.remote_auditor import RemoteA2aAgent
+    from apps.api.db import get_pool_optional
+    from apps.api.services.mock_audit_worker import MockAuditRunHandler
+    from apps.api.services.object_storage import get_object_storage
+
+    settings = get_settings()
+    storage = get_object_storage(settings)
+
+    async def _agent_factory() -> RemoteA2aAgent:
+        return RemoteA2aAgent(
+            base_url=settings.auditor_url,
+            expected_public_key_hex=settings.auditor_a2a_public_key,
+        )
+
+    return MockAuditRunHandler(
+        pool_factory=get_pool_optional,
+        storage=storage,
+        remote_agent_factory=_agent_factory,
+    )
 
 
 async def _noop_drift_scan(message: Any) -> None:
@@ -140,7 +160,7 @@ def _build_default_handlers() -> dict[JobType, Any]:
     return {
         JobType.QUESTIONNAIRE_FILL: _build_questionnaire_fill_handler(),
         JobType.POLICY_FINALIZE: _noop_policy_finalize,
-        JobType.MOCK_AUDIT_RUN: _noop_mock_audit_run,
+        JobType.MOCK_AUDIT_RUN: _build_mock_audit_handler(),
         JobType.DRIFT_SCAN: _noop_drift_scan,
         JobType.EVIDENCE_COMPACT: _noop_evidence_compact,
     }
@@ -321,6 +341,7 @@ app.include_router(connectors_router)
 app.include_router(actions_router)
 app.include_router(policies_router)
 app.include_router(questionnaire_router)
+app.include_router(mock_audit_router)
 
 
 @app.middleware("http")

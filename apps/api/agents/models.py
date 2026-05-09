@@ -34,12 +34,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from pydantic_ai.models import Model
-from pydantic_ai.models.anthropic import AnthropicModel
-from pydantic_ai.models.google import GoogleModel
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.anthropic import AnthropicProvider
-from pydantic_ai.providers.google import GoogleProvider
-from pydantic_ai.providers.openai import OpenAIProvider
+
+# NOTE: provider-specific Pydantic AI submodules import their respective
+# vendor SDKs at module-import time. A single bad version in any one of
+# them (anthropic, openai, google-genai) would crash the api at boot
+# even when the operator only uses Gemini. We lazy-import each submodule
+# inside the matching ``build_model`` branch so unused providers can not
+# poison the boot.
 
 if TYPE_CHECKING:  # pragma: no cover
     from apps.api.config import Settings
@@ -150,6 +151,9 @@ def build_model(model_string: str, settings: Settings) -> Model:
                 "google-gla provider requested but gemini_api_key is not set; "
                 "set GEMINI_API_KEY in .env."
             )
+        from pydantic_ai.models.google import GoogleModel
+        from pydantic_ai.providers.google import GoogleProvider
+
         provider = GoogleProvider(
             api_key=settings.gemini_api_key.get_secret_value(),
             vertexai=False,
@@ -162,6 +166,9 @@ def build_model(model_string: str, settings: Settings) -> Model:
                 "anthropic provider requested but anthropic_api_key is not set; "
                 "set ANTHROPIC_API_KEY in .env."
             )
+        from pydantic_ai.models.anthropic import AnthropicModel
+        from pydantic_ai.providers.anthropic import AnthropicProvider
+
         provider = AnthropicProvider(
             api_key=settings.anthropic_api_key.get_secret_value()
         )
@@ -173,6 +180,9 @@ def build_model(model_string: str, settings: Settings) -> Model:
                 "openai provider requested but openai_api_key is not set; "
                 "set OPENAI_API_KEY in .env."
             )
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
         provider = OpenAIProvider(
             api_key=settings.openai_api_key.get_secret_value()
         )

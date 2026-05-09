@@ -13,6 +13,12 @@ dependencies = [
   "pydantic>=2.0",
   "pydantic-settings>=2.0",
   "pydantic-ai>=1.0,<2.0",
+  # pydantic-ai's optional model adapters import provider SDKs at module
+  # import time. Pin recent versions explicitly so the resolver does not
+  # pick an older anthropic / openai / google-genai whose API surface drifts.
+  "anthropic>=0.40",
+  "openai>=1.50",
+  "google-genai>=0.3",
   "langgraph>=1.0,<2.0",
   "langgraph-checkpoint-postgres>=1.0",
   "litellm>=1.50",
